@@ -56,7 +56,6 @@ enum Commands {
 enum Algorithm {
     Std,
     Conv,
-    FFTConv,
 }
 
 impl FromStr for Algorithm {
@@ -68,11 +67,6 @@ impl FromStr for Algorithm {
             "standard" => Ok(Algorithm::Std),
             "conv" => Ok(Algorithm::Conv),
             "convolution" => Ok(Algorithm::Conv),
-            "fft" => Ok(Algorithm::FFTConv),
-            "fftconv" => Ok(Algorithm::FFTConv),
-            "fft_conv" => Ok(Algorithm::FFTConv),
-            "fftconvolution" => Ok(Algorithm::FFTConv),
-            "fft_convolution" => Ok(Algorithm::FFTConv),
             _ => Err(()),
         }
     }
@@ -83,7 +77,6 @@ impl Display for Algorithm {
         match *self {
             Algorithm::Std => write!(f, "standard"),
             Algorithm::Conv => write!(f, "convolution"),
-            Algorithm::FFTConv => write!(f, "fft_convolution"),
         }
     }
 }
@@ -160,10 +153,9 @@ fn main() {
             Ok(alg) => alg,
             Err(_) => {
                 println!(
-                    "Invalid algorithm.\nPlease choose from {}, {}, or {}.\nAborting...",
+                    "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
                     Algorithm::Std,
                     Algorithm::Conv,
-                    Algorithm::FFTConv
                 );
                 return;
             }
@@ -223,13 +215,6 @@ fn main() {
                 .into_shape((numx as usize, numy as usize))
                 .unwrap();
             let gol = GameOfLifeConvolution::new(field);
-            start(&cli, gol, iterations, time_per_iteration, pb, output_file)
-        }
-        Algorithm::FFTConv => {
-            let field = Array1::<bool>::from_vec(field_vec)
-                .into_shape((numx as usize, numy as usize))
-                .unwrap();
-            let gol = GameOfLifeFFT::new(field);
             start(&cli, gol, iterations, time_per_iteration, pb, output_file)
         }
     }

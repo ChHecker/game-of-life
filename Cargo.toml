@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.1.4", features = ["derive"] }
 exitcode = "1.1.2"
-fftconvolve = "0.1.1"
 indicatif = "0.17.3"
 inquire = "0.5.3"
 ndarray = { version = "0.15.6", features = ["rayon"] }

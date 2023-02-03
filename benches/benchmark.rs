@@ -12,7 +12,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     let numy: usize = 100;
     let field_vec_std: Vec<bool> = (0..numx * numy).map(|_| rng.gen_bool(0.3)).collect();
     let field_vec_conv = field_vec_std.clone();
-    // let field_vec_fft = field_vec_std.clone().iter().map(|x| *x as isize).collect();
 
     let field_std = Array1::<bool>::from_vec(field_vec_std)
         .map(|elem| RwLock::new(*elem))
@@ -21,13 +20,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     let field_conv = Array1::<bool>::from_vec(field_vec_conv)
         .into_shape((numx, numy))
         .unwrap();
-    // let field_fft = Array1::<isize>::from_vec(field_vec_fft)
-    //     .into_shape((numx, numy))
-    //     .unwrap();
 
     let mut gol_std = GameOfLifeStd::new(field_std);
     let mut gol_conv = GameOfLifeConvolution::new(field_conv);
-    // let mut gol_fft = GameOfLifeFFT::new(field_fft, numx, numy);
 
     c.bench_function("GOL Std", |b| {
         b.iter(|| {
@@ -43,13 +38,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             }
         })
     });
-    // c.bench_function("GOL FFT", |b| {
-    //     b.iter(|| {
-    //         for _ in 0..100 {
-    //             gol_fft.compute_new_generation()
-    //         }
-    //     })
-    // });
 }
 
 criterion_group!(benches, criterion_benchmark);

@@ -1,6 +1,5 @@
 use std::{path::Path, sync::RwLock};
 
-use fftconvolve::{fftconvolve, Mode};
 use indicatif::ProgressBar;
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
@@ -161,52 +160,6 @@ impl GameOfLife for GameOfLifeConvolution {
     }
 }
 
-#[derive(Debug)]
-/// Computes the time steps using `fftconvolve`.
-pub struct GameOfLifeFFT {
-    field: Array2<bool>,
-    numx: usize,
-    numy: usize,
-}
-
-impl GameOfLife for GameOfLifeFFT {
-    type Data = bool;
-
-    fn new(field: Array2<bool>) -> Self {
-        let shape = field.shape().to_owned();
-        let numx = shape[0];
-        let numy = shape[1];
-        Self { field, numx, numy }
-    }
-
-    fn compute_next_generation(&mut self) {
-        let kernel: Array2<isize> = arr2(&[[1, 1, 1], [1, 0, 1], [1, 1, 1]]);
-        let temp: Array2<isize> =
-            fftconvolve(&self.field.map(|x| *x as isize), &kernel, Mode::Full).unwrap();
-        Zip::from(&mut self.field)
-            .and(&temp)
-            .par_for_each(|elem_field, elem_temp| {
-                if *elem_temp == 3 || (*elem_field && *elem_temp == 2) {
-                    *elem_field = true;
-                } else {
-                    *elem_field = false;
-                }
-            });
-    }
-
-    fn cell(&self, x: usize, y: usize) -> bool {
-        self.field[[x, y]]
-    }
-
-    fn numx(&self) -> usize {
-        self.numx
-    }
-
-    fn numy(&self) -> usize {
-        self.numy
-    }
-}
-
 #[cfg(test)]
 mod test {
     use ndarray::Array1;
@@ -272,7 +225,6 @@ mod test {
         let numy: usize = 10;
         let field_vec_std: Vec<bool> = (0..numx * numy).map(|_| rng.gen_bool(0.3)).collect();
         let field_vec_conv = field_vec_std.clone();
-        // let field_vec_fft = field_vec_std.clone();
 
         let field_std = Array1::<bool>::from_vec(field_vec_std)
             .map(|elem| RwLock::new(*elem))
@@ -281,13 +233,9 @@ mod test {
         let field_conv = Array1::<bool>::from_vec(field_vec_conv)
             .into_shape((numx, numy))
             .unwrap();
-        // let field_fft = Array1::<bool>::from_vec(field_vec_fft)
-        //     .into_shape((numx, numy))
-        //     .unwrap();
 
         let mut gol_std = GameOfLifeStd::new(field_std);
         let mut gol_conv = GameOfLifeConvolution::new(field_conv);
-        // let mut gol_fft = GameOfLifeFFT::new(field_fft);
 
         assert!(
             gol_std
@@ -297,18 +245,9 @@ mod test {
                 .all(|(x, y)| *x.read().unwrap() == *y),
             "standard and convolution differ"
         );
-        // assert!(
-        //     gol_std
-        //         .field
-        //         .iter()
-        //         .zip(gol_fft.field.iter())
-        //         .all(|(x, y)| *x.read().unwrap() == *y),
-        //     "standard and fft differ"
-        // );
 
         gol_std.compute_next_generation();
         gol_conv.compute_next_generation();
-        // gol_fft.compute_next_generation();
 
         assert!(
             gol_std

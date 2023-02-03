@@ -21,8 +21,12 @@ with the flags being one of
 `gif` saves the Game of Life as a GIF with [`plotters`](https://docs.rs/plotters/latest/plotters/),  
 `tui` plots the Game of Life in the terminal with [`termion`](https://crates.io/crates/termion)
 
-## Licenses  
-Thanks to all authors for their great codes.
+## Algorithms
+The standard algorithms iterates over every cell, counts its neighbors, and then decides whether it's alive in the next step via normal `if` statements. This is fairly quick, especially as I used [`rayon`](https://crates.io/crates/rayon) to do this with multiple threads.  
+The convolution algorithm, however, is about 17x faster. It uses [`ndarray-ndimage`](https://crates.io/crates/ndarray-ndimage) to convolve the field with the kernel `[[1, 1, 1], [1, 0, 1], [1, 1, 1]]`, which is somehow extremely fast with only one thread (props to Nil!) and then calculates the next field with only addition, multiplication, and equality comparisons.
+
+## Licenses
+Thanks to all authors for their great codes. The code to drawing the Game of Life in the terminal was inspired by minesweeper in [`termion`](https://crates.io/crates/termion).
 
 | Crate                                                         | Author(s)                                                    | License        |
 | ------------------------------------------------------------- | ------------------------------------------------------------ | -------------- |

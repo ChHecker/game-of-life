@@ -620,7 +620,6 @@ dependencies = [
  "inquire",
  "ndarray",
  "ndarray-ndimage",
- "num-traits",
  "plotters",
  "rand",
  "rayon",

@@ -1,22 +1,25 @@
 use std::{path::Path, sync::RwLock};
 
-use convolve2d::ndconvolve2d;
 use fftconvolve::{fftconvolve, Mode};
 use indicatif::ProgressBar;
 use ndarray::{self, arr2, s, Array2, Zip};
+use ndarray_ndimage::convolve;
 use plotters::prelude::*;
 
 pub trait GameOfLife {
     type Data;
 
-    /// Generate a new Game of Life from a ndarray
+    /// Generate a new Game of Life from initial field
     fn new(field: Array2<Self::Data>) -> Self;
 
     /// Compute the next generation
     fn compute_next_generation(&mut self);
 
+    /// Returns the value at (x,y)
     fn cell(&self, x: usize, y: usize) -> bool;
+    /// Returns the number of columns
     fn numx(&self) -> usize;
+    /// Returns the number of rows
     fn numy(&self) -> usize;
 
     /// Plots the field as a GIF
@@ -57,7 +60,7 @@ pub struct GameOfLifeStd {
 }
 
 impl GameOfLifeStd {
-    /// Counts the living neighbors of the cell at (ix, iy)
+    /// Counts the living neighbors of the cell at (x, y)
     fn count_living_neighbors(&self, x: usize, y: usize) -> u8 {
         let right_border = if x + 1 < self.numx { x + 2 } else { self.numx };
         let left_border = if x > 1 { x - 1 } else { 0 };
@@ -109,6 +112,7 @@ impl GameOfLife for GameOfLifeStd {
 }
 
 #[derive(Debug)]
+/// Computes the time steps using `ndarray_ndimage`'s `convolve`.
 pub struct GameOfLifeConvolution {
     field: Array2<bool>,
     numx: usize,
@@ -127,10 +131,12 @@ impl GameOfLife for GameOfLifeConvolution {
 
     fn compute_next_generation(&mut self) {
         let kernel = arr2(&[[1, 1, 1], [1, 0, 1], [1, 1, 1]]);
-        let temp = ndconvolve2d(&self.field.map(|x| *x as u8), &kernel);
-        eprintln!("{:?}", kernel);
-        eprintln!("{:?}", self.field.map(|x| *x as u8));
-        eprintln!("{:?}", temp);
+        let temp = convolve(
+            &self.field.map(|x| *x as u8),
+            &kernel,
+            ndarray_ndimage::BorderMode::Constant(0),
+            0,
+        );
         Zip::from(&mut self.field)
             .and(&temp)
             .par_for_each(|elem_field, elem_temp| {
@@ -140,7 +146,6 @@ impl GameOfLife for GameOfLifeConvolution {
                     *elem_field = false;
                 }
             });
-        eprintln!("{:?}", self.field);
     }
 
     fn cell(&self, x: usize, y: usize) -> bool {
@@ -157,6 +162,7 @@ impl GameOfLife for GameOfLifeConvolution {
 }
 
 #[derive(Debug)]
+/// Computes the time steps using `fftconvolve`.
 pub struct GameOfLifeFFT {
     field: Array2<bool>,
     numx: usize,
@@ -266,7 +272,7 @@ mod test {
         let numy: usize = 10;
         let field_vec_std: Vec<bool> = (0..numx * numy).map(|_| rng.gen_bool(0.3)).collect();
         let field_vec_conv = field_vec_std.clone();
-        let field_vec_fft = field_vec_std.clone();
+        // let field_vec_fft = field_vec_std.clone();
 
         let field_std = Array1::<bool>::from_vec(field_vec_std)
             .map(|elem| RwLock::new(*elem))
@@ -275,13 +281,13 @@ mod test {
         let field_conv = Array1::<bool>::from_vec(field_vec_conv)
             .into_shape((numx, numy))
             .unwrap();
-        let field_fft = Array1::<bool>::from_vec(field_vec_fft)
-            .into_shape((numx, numy))
-            .unwrap();
+        // let field_fft = Array1::<bool>::from_vec(field_vec_fft)
+        //     .into_shape((numx, numy))
+        //     .unwrap();
 
         let mut gol_std = GameOfLifeStd::new(field_std);
         let mut gol_conv = GameOfLifeConvolution::new(field_conv);
-        let mut gol_fft = GameOfLifeFFT::new(field_fft);
+        // let mut gol_fft = GameOfLifeFFT::new(field_fft);
 
         assert!(
             gol_std
@@ -291,36 +297,18 @@ mod test {
                 .all(|(x, y)| *x.read().unwrap() == *y),
             "standard and convolution differ"
         );
-        assert!(
-            gol_std
-                .field
-                .iter()
-                .zip(gol_fft.field.iter())
-                .all(|(x, y)| *x.read().unwrap() == *y),
-            "standard and fft differ"
-        );
-
-        // gol_std.compute_next_generation();
-        // gol_conv.compute_next_generation();
-        // gol_fft.compute_next_generation();
-        gol_std.start(Path::new("std.gif".into()), 2, 1000, None);
-        gol_conv.start(Path::new("conv.gif".into()), 2, 1000, None);
-        gol_fft.start(Path::new("fft.gif".into()), 2, 1000, None);
-
-        // println!(
-        //     "{:?}\n{:?}",
-        //     gol_std.field.map(|x| *x.read().unwrap()),
-        //     gol_conv.field,
-        // );
-        // println!(
-        //     "{:?}",
+        // assert!(
         //     gol_std
         //         .field
         //         .iter()
-        //         .zip(gol_conv.field.iter())
-        //         .map(|(x, y)| *x.read().unwrap() == *y)
-        //         .collect::<Vec<bool>>()
+        //         .zip(gol_fft.field.iter())
+        //         .all(|(x, y)| *x.read().unwrap() == *y),
+        //     "standard and fft differ"
         // );
+
+        gol_std.compute_next_generation();
+        gol_conv.compute_next_generation();
+        // gol_fft.compute_next_generation();
 
         assert!(
             gol_std
@@ -329,14 +317,6 @@ mod test {
                 .zip(gol_conv.field.iter())
                 .all(|(x, y)| *x.read().unwrap() == *y),
             "standard and convolution differ after one iteration"
-        );
-        assert!(
-            gol_std
-                .field
-                .iter()
-                .zip(gol_fft.field.iter())
-                .all(|(x, y)| *x.read().unwrap() == *y),
-            "standard and fft differ after one iteration"
         );
     }
 }

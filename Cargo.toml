@@ -7,12 +7,12 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.1.4", features = ["derive"] }
-convolve2d = { path = "../convolve2d", features = ["ndarray", "rayon"] }
 exitcode = "1.1.2"
 fftconvolve = "0.1.1"
 indicatif = "0.17.3"
 inquire = "0.5.3"
 ndarray = { version = "0.15.6", features = ["rayon"] }
+ndarray-ndimage = "0.3.0"
 num-traits = "0.2.15"
 plotters = "0.3.4"
 rand = "0.8.5"

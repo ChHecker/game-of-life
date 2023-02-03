@@ -103,12 +103,16 @@ impl<G: GameOfLife> Drop for TUI<G> {
     }
 }
 
-pub fn get_size(numx: Option<u16>, numy: Option<u16>) -> (u16, u16) {
+pub fn get_size(numx: Option<u32>, numy: Option<u32>) -> (u32, u32) {
     let termsize = termion::terminal_size().ok();
     let termwidth = termsize.map(|(w, _)| w - 2);
     let termheight = termsize.map(|(_, h)| h - 2);
     (
-        numx.or(termwidth).or(Some(10)).unwrap(),
-        numy.or(termheight).or(Some(10)).unwrap(),
+        numx.or(termwidth.map(|elem| elem as u32))
+            .or(Some(10))
+            .unwrap(),
+        numy.or(termheight.map(|elem| elem as u32))
+            .or(Some(10))
+            .unwrap(),
     )
 }

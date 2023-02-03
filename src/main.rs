@@ -31,11 +31,11 @@ struct Cli {
 
     /// x dimension of the field
     #[arg(short)]
-    x: Option<u16>,
+    x: Option<u32>,
 
     /// y dimension of the field
     #[arg(short)]
-    y: Option<u16>,
+    y: Option<u32>,
 
     /// Algorithm
     #[arg(short, long)]
@@ -52,6 +52,7 @@ enum Commands {
     TUI,
 }
 
+/// Available algorithms to calculate the time steps
 enum Algorithm {
     Std,
     Conv,
@@ -87,6 +88,10 @@ impl Display for Algorithm {
     }
 }
 
+/// Handles the path to the output file.
+///
+/// If the file exists, the user is prompted whether to overwrite it. If not, the program terminate.
+/// If the file name has a different extension than ".gif", the program terminates with an error message. If the file name has no extension, ".gif" is appended.
 fn handle_path(output_file: &str) -> PathBuf {
     let mut output_file = Path::new(&output_file).to_path_buf();
     if output_file.exists() {
@@ -123,6 +128,7 @@ fn handle_path(output_file: &str) -> PathBuf {
     output_file
 }
 
+/// Start the Game of Life
 fn start<G: GameOfLife>(
     cli: &Cli,
     mut gol: G,
@@ -148,12 +154,13 @@ fn start<G: GameOfLife>(
 fn main() {
     let cli = Cli::parse();
 
+    // Choose the algorithm from the String
     let algorithm = match cli.algorithm {
         Some(ref alg_str) => match Algorithm::from_str(alg_str) {
             Ok(alg) => alg,
             Err(_) => {
                 println!(
-                    "Invalid algorithm.\nPlease choose from {}, {}, or {}.",
+                    "Invalid algorithm.\nPlease choose from {}, {}, or {}.\nAborting...",
                     Algorithm::Std,
                     Algorithm::Conv,
                     Algorithm::FFTConv
@@ -164,11 +171,16 @@ fn main() {
         None => Algorithm::Conv,
     };
 
+    // Load command line arguments
     let iterations = cli.iterations.or(Some(10)).unwrap();
     let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
     let probability = cli.probability.or(Some(0.2)).unwrap();
-    let numx: u16;
-    let numy: u16;
+    if probability < 0.0 || probability > 1.0 {
+        println!("Probability has to between 0 and 1!\nAborting...");
+        return;
+    }
+    let numx: u32;
+    let numy: u32;
 
     let output_file: Option<PathBuf>;
 
@@ -190,11 +202,13 @@ fn main() {
         }
     }
 
+    // Generate a random initial distribution
     let mut rng = rand::thread_rng();
     let field_vec: Vec<bool> = (0..numx * numy)
         .map(|_| rng.gen_bool(probability))
         .collect();
 
+    // Pass the field to a GameOfLife instance and start it
     match algorithm {
         Algorithm::Std => {
             let field_vec_std = field_vec.iter().map(|elem| RwLock::new(*elem)).collect();
@@ -219,32 +233,4 @@ fn main() {
             start(&cli, gol, iterations, time_per_iteration, pb, output_file)
         }
     }
-}
-
-#[cfg(test)]
-mod test {
-    use game_of_life::{game_of_life::*, tui::TUI};
-    use ndarray::Array1;
-    use rand::Rng;
-    use std::path::Path;
-
-    #[test]
-    #[ignore]
-    fn compare_gif_tui() {
-        let mut rng = rand::thread_rng();
-        let field_vec: Vec<bool> = (0..10 * 10).map(|_| rng.gen_bool(0.2)).collect();
-        let field = Array1::<bool>::from_vec(field_vec)
-            .into_shape((10, 10))
-            .unwrap();
-        let field2 = field.clone();
-        let mut gol = GameOfLifeConvolution::new(field);
-        let gol2 = GameOfLifeConvolution::new(field2);
-
-        gol.start(Path::new("test.gif"), 2, 1000, None);
-        let mut tui = TUI::new(gol2);
-        tui.start(2, 10000);
-    }
-
-    // #[test]
-    // fn
 }

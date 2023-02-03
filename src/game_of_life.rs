@@ -136,15 +136,10 @@ impl GameOfLife for GameOfLifeConvolution {
             ndarray_ndimage::BorderMode::Constant(0),
             0,
         );
-        Zip::from(&mut self.field)
-            .and(&temp)
-            .par_for_each(|elem_field, elem_temp| {
-                if *elem_temp == 3 || (*elem_field && *elem_temp == 2) {
-                    *elem_field = true;
-                } else {
-                    *elem_field = false;
-                }
-            });
+        let two_neighbors = temp.map(|elem| (*elem == 2) as u8);
+        let three_neighbors = temp.map(|elem| (*elem == 3) as u8);
+        self.field = (self.field.map(|elem| *elem as u8) * two_neighbors + three_neighbors)
+            .map(|elem| *elem != 0);
     }
 
     fn cell(&self, x: usize, y: usize) -> bool {

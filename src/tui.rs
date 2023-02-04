@@ -1,5 +1,10 @@
 use crate::game_of_life::*;
+use termion::async_stdin;
 use termion::cursor;
+use termion::event::Key;
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::raw::RawTerminal;
 use termion::screen::{AlternateScreen, IntoAlternateScreen};
 
 use std::io::{self, Stdout, Write};
@@ -16,19 +21,28 @@ const CONCEALED: &str = "▒";
 
 pub struct TUI<G: GameOfLife> {
     gol: G,
-    screen: AlternateScreen<Stdout>,
+    screen: AlternateScreen<RawTerminal<Stdout>>,
 }
 
 impl<G: GameOfLife> TUI<G> {
     pub fn new(gol: G) -> Self {
-        let screen = io::stdout().into_alternate_screen().unwrap();
+        let screen = io::stdout().into_raw_mode().unwrap();
+        let screen = screen.into_alternate_screen().unwrap();
         Self { gol, screen }
     }
 
     pub fn start(&mut self, iterations: usize, time_per_iteration: u32) {
         self.initialize_field();
+        let mut stdin = async_stdin().keys();
 
         for _ in 0..iterations {
+            for key in &mut stdin {
+                let key = key.unwrap();
+                if let Key::Char('q') = key {
+                    return;
+                }
+            }
+
             self.gol.compute_next_generation();
             self.draw_field();
             sleep(Duration::from_millis(time_per_iteration as u64))

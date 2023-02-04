@@ -48,7 +48,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Prints the Game of Life in a GIF, takes file name of GIF
     GIF { output: String },
+    /// Prints the Game of Life in the terminal, press 'q' to exit
     TUI,
 }
 

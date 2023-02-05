@@ -16,7 +16,7 @@ use rand::{self, Rng};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
-struct Cli {
+struct CLI {
     /// Whether to plot as a GIF or in the terminal
     #[command(subcommand)]
     command: Commands,
@@ -54,6 +54,17 @@ enum Commands {
     TUI,
 }
 
+struct Arguments {
+    output_file: Option<PathBuf>,
+    iterations: usize,
+    time_per_iteration: u32,
+    numx: u32,
+    numy: u32,
+    algorithm: Algorithm,
+    probability: f64,
+    progressbar: Option<ProgressBar>,
+}
+
 /// Available algorithms to calculate the time steps
 enum Algorithm {
     Std,
@@ -80,6 +91,67 @@ impl Display for Algorithm {
             Algorithm::Std => write!(f, "standard"),
             Algorithm::Conv => write!(f, "convolution"),
         }
+    }
+}
+
+/// Reads the command line arguments into the `Arguments` struct.
+/// Checkis for valid values and sets defaults if no values were provided.
+fn read_arguments(cli: &CLI) -> Arguments {
+    // Choose the algorithm from the String
+    let algorithm = match cli.algorithm {
+        Some(ref alg_str) => match Algorithm::from_str(alg_str) {
+            Ok(alg) => alg,
+            Err(_) => {
+                println!(
+                    "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
+                    Algorithm::Std,
+                    Algorithm::Conv,
+                );
+                std::process::exit(exitcode::CONFIG);
+            }
+        },
+        None => Algorithm::Conv,
+    };
+
+    // Load command line arguments
+    let iterations = cli.iterations.or(Some(10)).unwrap();
+    let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
+    let probability = cli.probability.or(Some(0.2)).unwrap();
+    if probability < 0.0 || probability > 1.0 {
+        println!("Probability has to between 0 and 1!\nAborting...");
+        std::process::exit(exitcode::CONFIG);
+    }
+    let numx: u32;
+    let numy: u32;
+
+    let output_file: Option<PathBuf>;
+
+    let progressbar: Option<ProgressBar>;
+
+    match cli.command {
+        Commands::GIF { ref output } => {
+            output_file = Some(handle_path(&output));
+            numx = cli.x.or(Some(10)).unwrap();
+            numy = cli.y.or(Some(10)).unwrap();
+            let pb_def = ProgressBar::new(iterations as u64);
+            pb_def.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap().progress_chars("#>-"));
+            progressbar = Some(pb_def);
+        }
+        Commands::TUI => {
+            output_file = None;
+            (numx, numy) = get_size(cli.x, cli.y);
+            progressbar = None;
+        }
+    }
+    Arguments {
+        output_file,
+        iterations,
+        time_per_iteration,
+        numx,
+        numy,
+        algorithm,
+        probability,
+        progressbar,
     }
 }
 
@@ -125,7 +197,7 @@ fn handle_path(output_file: &str) -> PathBuf {
 
 /// Start the Game of Life
 fn start<G: GameOfLife>(
-    cli: &Cli,
+    cli: &CLI,
     mut gol: G,
     iterations: usize,
     time_per_iteration: u32,
@@ -147,77 +219,45 @@ fn start<G: GameOfLife>(
 }
 
 fn main() {
-    let cli = Cli::parse();
-
-    // Choose the algorithm from the String
-    let algorithm = match cli.algorithm {
-        Some(ref alg_str) => match Algorithm::from_str(alg_str) {
-            Ok(alg) => alg,
-            Err(_) => {
-                println!(
-                    "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
-                    Algorithm::Std,
-                    Algorithm::Conv,
-                );
-                return;
-            }
-        },
-        None => Algorithm::Conv,
-    };
-
-    // Load command line arguments
-    let iterations = cli.iterations.or(Some(10)).unwrap();
-    let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
-    let probability = cli.probability.or(Some(0.2)).unwrap();
-    if probability < 0.0 || probability > 1.0 {
-        println!("Probability has to between 0 and 1!\nAborting...");
-        return;
-    }
-    let numx: u32;
-    let numy: u32;
-
-    let output_file: Option<PathBuf>;
-
-    let pb: Option<ProgressBar>;
-
-    match cli.command {
-        Commands::GIF { ref output } => {
-            output_file = Some(handle_path(&output));
-            numx = cli.x.or(Some(10)).unwrap();
-            numy = cli.y.or(Some(10)).unwrap();
-            let pb_def = ProgressBar::new(iterations as u64);
-            pb_def.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap().progress_chars("#>-"));
-            pb = Some(pb_def);
-        }
-        Commands::TUI => {
-            output_file = None;
-            (numx, numy) = get_size(cli.x, cli.y);
-            pb = None;
-        }
-    }
+    let cli = CLI::parse();
+    let arguments = read_arguments(&cli);
 
     // Generate a random initial distribution
     let mut rng = rand::thread_rng();
-    let field_vec: Vec<bool> = (0..numx * numy)
-        .map(|_| rng.gen_bool(probability))
+    let field_vec: Vec<bool> = (0..arguments.numx * arguments.numy)
+        .map(|_| rng.gen_bool(arguments.probability))
         .collect();
 
     // Pass the field to a GameOfLife instance and start it
-    match algorithm {
+    match arguments.algorithm {
         Algorithm::Std => {
             let field_vec_std = field_vec.iter().map(|elem| RwLock::new(*elem)).collect();
             let field = Array1::<RwLock<bool>>::from_vec(field_vec_std)
-                .into_shape((numx as usize, numy as usize))
+                .into_shape((arguments.numx as usize, arguments.numy as usize))
                 .unwrap();
             let gol = GameOfLifeStd::new(field);
-            start(&cli, gol, iterations, time_per_iteration, pb, output_file)
+            start(
+                &cli,
+                gol,
+                arguments.iterations,
+                arguments.time_per_iteration,
+                arguments.progressbar,
+                arguments.output_file,
+            )
         }
         Algorithm::Conv => {
             let field = Array1::<bool>::from_vec(field_vec)
-                .into_shape((numx as usize, numy as usize))
+                .into_shape((arguments.numx as usize, arguments.numy as usize))
                 .unwrap();
             let gol = GameOfLifeConvolution::new(field);
-            start(&cli, gol, iterations, time_per_iteration, pb, output_file)
+            start(
+                &cli,
+                gol,
+                arguments.iterations,
+                arguments.time_per_iteration,
+                arguments.progressbar,
+                arguments.output_file,
+            )
         }
     }
 }

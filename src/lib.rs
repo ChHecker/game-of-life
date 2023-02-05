@@ -1,2 +1,2 @@
-pub mod game_of_life;
+pub mod gameoflife;
 pub mod tui;

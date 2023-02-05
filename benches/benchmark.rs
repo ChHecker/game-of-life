@@ -1,7 +1,7 @@
 use std::sync::RwLock;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use game_of_life::game_of_life::*;
+use gameoflife::gameoflife::*;
 use ndarray::{self, Array1};
 use rand::{self, Rng};
 

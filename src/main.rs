@@ -7,8 +7,8 @@ use std::{
 };
 
 use clap::{Parser, Subcommand};
-use game_of_life::game_of_life::*;
-use game_of_life::tui::*;
+use gameoflife::gameoflife::*;
+use gameoflife::tui::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use inquire::Confirm;
 use ndarray::{self, Array1};

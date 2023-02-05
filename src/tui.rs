@@ -1,7 +1,7 @@
 //! # TUI
 //! Builds a terminal user interface for the Game of Life field.
 
-use crate::game_of_life::*;
+use crate::gameoflife::*;
 use termion::async_stdin;
 use termion::cursor;
 use termion::event::Key;

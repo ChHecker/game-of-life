@@ -1,5 +1,5 @@
 [package]
-name = "game-of-life"
+name = "gameoflife"
 authors = ["Christopher Hecker"]
 version = "0.1.0"
 description = "An efficient implementation of Conway's Game of Life"

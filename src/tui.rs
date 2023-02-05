@@ -1,3 +1,6 @@
+//! # TUI
+//! Builds a terminal user interface for the Game of Life field.
+
 use crate::game_of_life::*;
 use termion::async_stdin;
 use termion::cursor;
@@ -117,16 +120,13 @@ impl<G: GameOfLife> Drop for TUI<G> {
     }
 }
 
+/// Returns the user preference for the field size if specified, else the terminal size.
 pub fn get_size(numx: Option<u32>, numy: Option<u32>) -> (u32, u32) {
     let termsize = termion::terminal_size().ok();
     let termwidth = termsize.map(|(w, _)| w - 2);
     let termheight = termsize.map(|(_, h)| h - 2);
     (
-        numx.or(termwidth.map(|elem| elem as u32))
-            .or(Some(10))
-            .unwrap(),
-        numy.or(termheight.map(|elem| elem as u32))
-            .or(Some(10))
-            .unwrap(),
+        numx.or(termwidth.map(|elem| elem as u32)).unwrap_or(10),
+        numy.or(termheight.map(|elem| elem as u32)).unwrap_or(10),
     )
 }

@@ -1,3 +1,6 @@
+//! # GameOfLife
+//! Contains a collection of structure necessary for building a Game of Life.
+
 use std::{path::Path, sync::RwLock};
 
 use indicatif::ProgressBar;
@@ -5,6 +8,7 @@ use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
 use plotters::prelude::*;
 
+/// Every Game of Life algorithm should implement this trait.
 pub trait GameOfLife {
     type Data;
 
@@ -52,6 +56,7 @@ pub trait GameOfLife {
 }
 
 #[derive(Debug)]
+/// Computes the time steps using ordinary iterations.
 pub struct GameOfLifeStd {
     field: Array2<RwLock<bool>>,
     numx: usize,

@@ -87,9 +87,9 @@ impl Arguments {
         };
 
         // Load command line arguments
-        let iterations = cli.iterations.or(Some(10)).unwrap();
-        let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
-        let probability = cli.probability.or(Some(0.2)).unwrap();
+        let iterations = cli.iterations.unwrap_or(10);
+        let time_per_iteration = cli.timeiter.unwrap_or(500);
+        let probability = cli.probability.unwrap_or(0.2);
         if probability < 0.0 || probability > 1.0 {
             eprintln!("Probability has to between 0 and 1!\nAborting...");
             std::process::exit(exitcode::CONFIG);
@@ -104,8 +104,8 @@ impl Arguments {
         match cli.command {
             Commands::GIF { ref output } => {
                 output_file = Some(handle_path(&output));
-                numx = cli.x.or(Some(10)).unwrap();
-                numy = cli.y.or(Some(10)).unwrap();
+                numx = cli.x.unwrap_or(10);
+                numy = cli.y.unwrap_or(10);
                 let pb_def = ProgressBar::new(iterations as u64);
                 pb_def.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap().progress_chars("#>-"));
                 progressbar = Some(pb_def);

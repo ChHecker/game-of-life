@@ -54,6 +54,7 @@ enum Commands {
     TUI,
 }
 
+#[derive(Debug)]
 struct Arguments {
     output_file: Option<PathBuf>,
     iterations: usize,
@@ -65,6 +66,70 @@ struct Arguments {
     progressbar: Option<ProgressBar>,
 }
 
+impl Arguments {
+    /// Reads the command line arguments into the `Arguments` struct.
+    /// Checks for valid values and sets defaults if no values were provided.
+    fn from_cli(cli: &CLI) -> Self {
+        // Choose the algorithm from the String
+        let algorithm = match cli.algorithm {
+            Some(ref alg_str) => match Algorithm::from_str(alg_str) {
+                Ok(alg) => alg,
+                Err(_) => {
+                    println!(
+                        "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
+                        Algorithm::Std,
+                        Algorithm::Conv,
+                    );
+                    std::process::exit(exitcode::CONFIG);
+                }
+            },
+            None => Algorithm::Conv,
+        };
+
+        // Load command line arguments
+        let iterations = cli.iterations.or(Some(10)).unwrap();
+        let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
+        let probability = cli.probability.or(Some(0.2)).unwrap();
+        if probability < 0.0 || probability > 1.0 {
+            println!("Probability has to between 0 and 1!\nAborting...");
+            std::process::exit(exitcode::CONFIG);
+        }
+        let numx: u32;
+        let numy: u32;
+
+        let output_file: Option<PathBuf>;
+
+        let progressbar: Option<ProgressBar>;
+
+        match cli.command {
+            Commands::GIF { ref output } => {
+                output_file = Some(handle_path(&output));
+                numx = cli.x.or(Some(10)).unwrap();
+                numy = cli.y.or(Some(10)).unwrap();
+                let pb_def = ProgressBar::new(iterations as u64);
+                pb_def.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap().progress_chars("#>-"));
+                progressbar = Some(pb_def);
+            }
+            Commands::TUI => {
+                output_file = None;
+                (numx, numy) = get_size(cli.x, cli.y);
+                progressbar = None;
+            }
+        }
+        Arguments {
+            output_file,
+            iterations,
+            time_per_iteration,
+            numx,
+            numy,
+            algorithm,
+            probability,
+            progressbar,
+        }
+    }
+}
+
+#[derive(Debug)]
 /// Available algorithms to calculate the time steps
 enum Algorithm {
     Std,
@@ -91,67 +156,6 @@ impl Display for Algorithm {
             Algorithm::Std => write!(f, "standard"),
             Algorithm::Conv => write!(f, "convolution"),
         }
-    }
-}
-
-/// Reads the command line arguments into the `Arguments` struct.
-/// Checkis for valid values and sets defaults if no values were provided.
-fn read_arguments(cli: &CLI) -> Arguments {
-    // Choose the algorithm from the String
-    let algorithm = match cli.algorithm {
-        Some(ref alg_str) => match Algorithm::from_str(alg_str) {
-            Ok(alg) => alg,
-            Err(_) => {
-                println!(
-                    "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
-                    Algorithm::Std,
-                    Algorithm::Conv,
-                );
-                std::process::exit(exitcode::CONFIG);
-            }
-        },
-        None => Algorithm::Conv,
-    };
-
-    // Load command line arguments
-    let iterations = cli.iterations.or(Some(10)).unwrap();
-    let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
-    let probability = cli.probability.or(Some(0.2)).unwrap();
-    if probability < 0.0 || probability > 1.0 {
-        println!("Probability has to between 0 and 1!\nAborting...");
-        std::process::exit(exitcode::CONFIG);
-    }
-    let numx: u32;
-    let numy: u32;
-
-    let output_file: Option<PathBuf>;
-
-    let progressbar: Option<ProgressBar>;
-
-    match cli.command {
-        Commands::GIF { ref output } => {
-            output_file = Some(handle_path(&output));
-            numx = cli.x.or(Some(10)).unwrap();
-            numy = cli.y.or(Some(10)).unwrap();
-            let pb_def = ProgressBar::new(iterations as u64);
-            pb_def.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap().progress_chars("#>-"));
-            progressbar = Some(pb_def);
-        }
-        Commands::TUI => {
-            output_file = None;
-            (numx, numy) = get_size(cli.x, cli.y);
-            progressbar = None;
-        }
-    }
-    Arguments {
-        output_file,
-        iterations,
-        time_per_iteration,
-        numx,
-        numy,
-        algorithm,
-        probability,
-        progressbar,
     }
 }
 
@@ -220,7 +224,7 @@ fn start<G: GameOfLife>(
 
 fn main() {
     let cli = CLI::parse();
-    let arguments = read_arguments(&cli);
+    let arguments = Arguments::from_cli(&cli);
 
     // Generate a random initial distribution
     let mut rng = rand::thread_rng();

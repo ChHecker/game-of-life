@@ -3,6 +3,7 @@ name = "game-of-life"
 authors = ["Christopher Hecker"]
 version = "0.1.0"
 description = "An efficient implementation of Conway's Game of Life"
+license = "MIT"
 edition = "2021"
 
 [dependencies]

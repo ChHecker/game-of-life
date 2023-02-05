@@ -69,13 +69,13 @@ struct Arguments {
 impl Arguments {
     /// Reads the command line arguments into the `Arguments` struct.
     /// Checks for valid values and sets defaults if no values were provided.
-    fn from_cli(cli: &CLI) -> Self {
+    fn parse_cli(cli: &CLI) -> Self {
         // Choose the algorithm from the String
         let algorithm = match cli.algorithm {
             Some(ref alg_str) => match Algorithm::from_str(alg_str) {
                 Ok(alg) => alg,
                 Err(_) => {
-                    println!(
+                    eprintln!(
                         "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
                         Algorithm::Std,
                         Algorithm::Conv,
@@ -91,7 +91,7 @@ impl Arguments {
         let time_per_iteration = cli.timeiter.or(Some(500)).unwrap();
         let probability = cli.probability.or(Some(0.2)).unwrap();
         if probability < 0.0 || probability > 1.0 {
-            println!("Probability has to between 0 and 1!\nAborting...");
+            eprintln!("Probability has to between 0 and 1!\nAborting...");
             std::process::exit(exitcode::CONFIG);
         }
         let numx: u32;
@@ -179,7 +179,7 @@ fn handle_path(output_file: &str) -> PathBuf {
         match ans {
             Ok(true) => (),
             Ok(false) => {
-                println!("Aborting...");
+                eprintln!("Aborting...");
                 std::process::exit(exitcode::CANTCREAT);
             }
             Err(e) => panic!("{e}"),
@@ -188,7 +188,7 @@ fn handle_path(output_file: &str) -> PathBuf {
     match output_file.extension() {
         Some(extension) => {
             if extension != "gif" {
-                println!("The field must be saved as a \".gif\" file.\nAborting...");
+                eprintln!("The field must be saved as a \".gif\" file.\nAborting...");
                 std::process::exit(exitcode::CONFIG);
             };
         }
@@ -224,7 +224,7 @@ fn start<G: GameOfLife>(
 
 fn main() {
     let cli = CLI::parse();
-    let arguments = Arguments::from_cli(&cli);
+    let arguments = Arguments::parse_cli(&cli);
 
     // Generate a random initial distribution
     let mut rng = rand::thread_rng();

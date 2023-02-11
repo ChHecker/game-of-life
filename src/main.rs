@@ -107,7 +107,13 @@ impl Arguments {
                 numx = cli.x.unwrap_or(10);
                 numy = cli.y.unwrap_or(10);
                 let pb_def = ProgressBar::new(iterations as u64);
-                pb_def.set_style(ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})").unwrap().progress_chars("#>-"));
+                pb_def.set_style(
+                    ProgressStyle::with_template(
+                        "{spinner:.green} [{elapsed}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
+                    )
+                    .unwrap()
+                    .progress_chars("#>-"),
+                );
                 progressbar = Some(pb_def);
             }
             Commands::TUI => {
@@ -165,6 +171,17 @@ impl Display for Algorithm {
 /// If the file name has a different extension than ".gif", the program terminates with an error message. If the file name has no extension, ".gif" is appended.
 fn handle_path(output_file: &str) -> PathBuf {
     let mut output_file = Path::new(&output_file).to_path_buf();
+    match output_file.extension() {
+        Some(extension) => {
+            if extension != "gif" {
+                eprintln!("The field must be saved as a \".gif\" file.\nAborting...");
+                std::process::exit(exitcode::CONFIG);
+            };
+        }
+        None => {
+            output_file.set_extension("gif");
+        }
+    }
     if output_file.exists() {
         let ans = Confirm::new(
             format!(
@@ -183,17 +200,6 @@ fn handle_path(output_file: &str) -> PathBuf {
                 std::process::exit(exitcode::CANTCREAT);
             }
             Err(e) => panic!("{e}"),
-        }
-    }
-    match output_file.extension() {
-        Some(extension) => {
-            if extension != "gif" {
-                eprintln!("The field must be saved as a \".gif\" file.\nAborting...");
-                std::process::exit(exitcode::CONFIG);
-            };
-        }
-        None => {
-            output_file.set_extension("gif");
         }
     }
     output_file

@@ -34,21 +34,27 @@ impl<G: GameOfLife> TUI<G> {
         Self { gol, screen }
     }
 
+    /// `timer_per_iteration`: ms
     pub fn start(&mut self, iterations: usize, time_per_iteration: u32) {
         self.initialize_field();
         let mut stdin = async_stdin().keys();
+        let polling_time = 200;
+        let sleep_how_often = time_per_iteration / polling_time;
+        let remaining_sleep = time_per_iteration - sleep_how_often * polling_time;
 
         for _ in 0..iterations {
-            for key in &mut stdin {
-                let key = key.unwrap();
-                if let Key::Char('q') = key {
-                    return;
-                }
-            }
-
             self.gol.compute_next_generation();
             self.draw_field();
-            sleep(Duration::from_millis(time_per_iteration as u64))
+            for _ in 0..sleep_how_often {
+                for key in &mut stdin {
+                    let key = key.unwrap();
+                    if let Key::Char('q') = key {
+                        return;
+                    }
+                }
+                sleep(Duration::from_millis(polling_time as u64))
+            }
+            sleep(Duration::from_millis(remaining_sleep as u64))
         }
     }
 

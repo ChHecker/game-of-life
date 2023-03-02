@@ -233,18 +233,25 @@ fn main() {
 
     // Generate a random initial distribution
     let mut rng = rand::thread_rng();
-    let field_vec: Vec<bool> = (0..arguments.numx * arguments.numy)
-        .map(|_| rng.gen_bool(arguments.probability))
+    let field_vec: Vec<u8> = (0..arguments.numx * arguments.numy)
+        .map(|_| rng.gen_bool(arguments.probability) as u8)
         .collect();
+
+    let rules = Rule::new(
+        [false, false, true, true, false, false, false, false, false],
+        [false, false, false, true, false, false, false, false, false],
+        1,
+        NeighborRule::Moore,
+    );
 
     // Pass the field to a GameOfLife instance and start it
     match arguments.algorithm {
         Algorithm::Std => {
             let field_vec_std = field_vec.iter().map(|elem| RwLock::new(*elem)).collect();
-            let field = Array1::<RwLock<bool>>::from_vec(field_vec_std)
+            let field = Array1::<RwLock<u8>>::from_vec(field_vec_std)
                 .into_shape((arguments.numx as usize, arguments.numy as usize))
                 .unwrap();
-            let gol = GameOfLifeStd::new(field);
+            let gol = GameOfLifeStd::new(field, rules);
             start(
                 &cli,
                 gol,
@@ -255,10 +262,10 @@ fn main() {
             )
         }
         Algorithm::Conv => {
-            let field = Array1::<bool>::from_vec(field_vec)
+            let field = Array1::<u8>::from_vec(field_vec)
                 .into_shape((arguments.numx as usize, arguments.numy as usize))
                 .unwrap();
-            let gol = GameOfLifeConvolution::new(field);
+            let gol = GameOfLifeConvolution::new(field, rules);
             start(
                 &cli,
                 gol,

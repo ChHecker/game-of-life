@@ -43,7 +43,7 @@ impl<G: GameOfLife> GIF<G> {
             for (id, subarea) in subareas.iter().enumerate() {
                 let x = id % self.gameoflife.numx();
                 let y = id / self.gameoflife.numy();
-                let color = if self.gameoflife.cell(x, y) {
+                let color = if self.gameoflife.cell(x, y).unwrap() > 0 {
                     &WHITE
                 } else {
                     &BLACK
@@ -126,7 +126,7 @@ impl<G: GameOfLife> TUI<G> {
             screen.write(VERT_BOUNDARY.as_bytes()).unwrap();
 
             for x in 0..width {
-                if self.gol.cell(x, y) {
+                if self.gol.cell(x, y).unwrap() > 0 {
                     screen.write(CONCEALED.as_bytes()).unwrap();
                 } else {
                     screen.write(b" ").unwrap();
@@ -156,7 +156,7 @@ impl<G: GameOfLife> TUI<G> {
         for y in 0..height {
             write!(screen, "{}", cursor::Goto(2, y + 2)).unwrap();
             for x in 0..width {
-                if self.gol.cell(x as usize, y as usize) {
+                if self.gol.cell(x as usize, y as usize).unwrap() > 0 {
                     screen.write(CONCEALED.as_bytes()).unwrap();
                 } else {
                     screen.write(b" ").unwrap();

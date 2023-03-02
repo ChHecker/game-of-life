@@ -38,13 +38,21 @@ struct CLI {
     #[arg(short)]
     y: Option<u32>,
 
-    /// Algorithm
+    /// Algorithm (standard or convolution)
     #[arg(short, long)]
     algorithm: Option<String>,
+
+    /// Neighbor algorithm (Moore or VonNeumann)
+    #[arg(short, long)]
+    neighbor: Option<String>,
 
     /// Probability of living cells in the initial field
     #[arg(short, long)]
     probability: Option<f64>,
+
+    /// Number of iterations before a cell dies
+    #[arg(short, long)]
+    state: Option<u8>,
 }
 
 #[derive(Subcommand)]
@@ -56,6 +64,35 @@ enum Commands {
 }
 
 #[derive(Debug)]
+/// Available algorithms to calculate the time steps
+enum Algorithm {
+    Std,
+    Conv,
+}
+
+impl FromStr for Algorithm {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Algorithm, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "std" => Ok(Algorithm::Std),
+            "standard" => Ok(Algorithm::Std),
+            "conv" => Ok(Algorithm::Conv),
+            "convolution" => Ok(Algorithm::Conv),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for Algorithm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Algorithm::Std => write!(f, "standard"),
+            Algorithm::Conv => write!(f, "convolution"),
+        }
+    }
+}
+
 struct Arguments {
     output_file: Option<PathBuf>,
     iterations: usize,
@@ -63,7 +100,9 @@ struct Arguments {
     numx: u32,
     numy: u32,
     algorithm: Algorithm,
+    neighbor_algorithm: NeighborRule,
     probability: f64,
+    state: u8,
     progressbar: Option<ProgressBar>,
 }
 
@@ -73,8 +112,8 @@ impl Arguments {
     fn parse_cli(cli: &CLI) -> Self {
         // Choose the algorithm from the String
         let algorithm = match cli.algorithm {
-            Some(ref alg_str) => match Algorithm::from_str(alg_str) {
-                Ok(alg) => alg,
+            Some(ref algorithm_string) => match Algorithm::from_str(algorithm_string) {
+                Ok(algorithm) => algorithm,
                 Err(_) => {
                     eprintln!(
                         "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
@@ -87,6 +126,21 @@ impl Arguments {
             None => Algorithm::Conv,
         };
 
+        let neighbor_algorithm = match cli.neighbor {
+            Some(ref neighbor_string) => match NeighborRule::from_str(neighbor_string) {
+                Ok(neighbor_algorithm) => neighbor_algorithm,
+                Err(_) => {
+                    eprintln!(
+                        "Invalid algorithm.\nPlease choose from {}, or {}.\nAborting...",
+                        NeighborRule::Moore,
+                        NeighborRule::VonNeumann
+                    );
+                    std::process::exit(exitcode::CONFIG);
+                }
+            },
+            None => NeighborRule::Moore,
+        };
+
         // Load command line arguments
         let iterations = cli.iterations.unwrap_or(10);
         let time_per_iteration = Duration::from_millis(cli.timeiter.unwrap_or(500) as u64);
@@ -95,6 +149,9 @@ impl Arguments {
             eprintln!("Probability has to between 0 and 1!\nAborting...");
             std::process::exit(exitcode::CONFIG);
         }
+
+        let state = cli.state.unwrap_or(1);
+
         let numx: u32;
         let numy: u32;
 
@@ -130,38 +187,10 @@ impl Arguments {
             numx,
             numy,
             algorithm,
+            neighbor_algorithm,
             probability,
+            state,
             progressbar,
-        }
-    }
-}
-
-#[derive(Debug)]
-/// Available algorithms to calculate the time steps
-enum Algorithm {
-    Std,
-    Conv,
-}
-
-impl FromStr for Algorithm {
-    type Err = ();
-
-    fn from_str(input: &str) -> Result<Algorithm, Self::Err> {
-        match input.to_lowercase().as_str() {
-            "std" => Ok(Algorithm::Std),
-            "standard" => Ok(Algorithm::Std),
-            "conv" => Ok(Algorithm::Conv),
-            "convolution" => Ok(Algorithm::Conv),
-            _ => Err(()),
-        }
-    }
-}
-
-impl Display for Algorithm {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Algorithm::Std => write!(f, "standard"),
-            Algorithm::Conv => write!(f, "convolution"),
         }
     }
 }
@@ -234,14 +263,14 @@ fn main() {
     // Generate a random initial distribution
     let mut rng = rand::thread_rng();
     let field_vec: Vec<u8> = (0..arguments.numx * arguments.numy)
-        .map(|_| rng.gen_bool(arguments.probability) as u8)
+        .map(|_| rng.gen_bool(arguments.probability) as u8 * arguments.state)
         .collect();
 
     let rules = Rule::new(
         LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
         LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
-        1,
-        NeighborRule::Moore,
+        arguments.state,
+        arguments.neighbor_algorithm,
     );
 
     // Pass the field to a GameOfLife instance and start it

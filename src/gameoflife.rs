@@ -1,7 +1,7 @@
 //! # GameOfLife
 //! Contains a collection of structure necessary for building a Game of Life.
 
-use std::{ops::Range, sync::RwLock};
+use std::{fmt::Display, ops::Range, str::FromStr, sync::RwLock};
 
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
@@ -10,6 +10,29 @@ use ndarray_ndimage::convolve;
 pub enum NeighborRule {
     Moore,
     VonNeumann,
+}
+
+impl FromStr for NeighborRule {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<NeighborRule, Self::Err> {
+        match input.to_lowercase().as_str() {
+            "m" => Ok(NeighborRule::Moore),
+            "moore" => Ok(NeighborRule::Moore),
+            "vn" => Ok(NeighborRule::VonNeumann),
+            "vonneumann" => Ok(NeighborRule::VonNeumann),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for NeighborRule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            NeighborRule::Moore => write!(f, "Moore"),
+            NeighborRule::VonNeumann => write!(f, "von Neumann"),
+        }
+    }
 }
 
 #[derive(Clone)]

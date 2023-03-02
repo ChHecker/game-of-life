@@ -4,11 +4,12 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
     sync::RwLock,
+    time::Duration,
 };
 
 use clap::{Parser, Subcommand};
 use gameoflife::gameoflife::*;
-use gameoflife::tui::*;
+use gameoflife::presentation::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use inquire::Confirm;
 use ndarray::{self, Array1};
@@ -58,7 +59,7 @@ enum Commands {
 struct Arguments {
     output_file: Option<PathBuf>,
     iterations: usize,
-    time_per_iteration: u32,
+    time_per_iteration: Duration,
     numx: u32,
     numy: u32,
     algorithm: Algorithm,
@@ -88,7 +89,7 @@ impl Arguments {
 
         // Load command line arguments
         let iterations = cli.iterations.unwrap_or(10);
-        let time_per_iteration = cli.timeiter.unwrap_or(500);
+        let time_per_iteration = Duration::from_millis(cli.timeiter.unwrap_or(500) as u64);
         let probability = cli.probability.unwrap_or(0.2);
         if probability < 0.0 || probability > 1.0 {
             eprintln!("Probability has to between 0 and 1!\nAborting...");
@@ -208,19 +209,17 @@ fn handle_path(output_file: &str) -> PathBuf {
 /// Start the Game of Life
 fn start<G: GameOfLife>(
     cli: &CLI,
-    mut gol: G,
+    gol: G,
     iterations: usize,
-    time_per_iteration: u32,
+    time_per_iteration: Duration,
     pb: Option<ProgressBar>,
     output_file: Option<PathBuf>,
 ) {
     match &cli.command {
-        Commands::GIF { output: _ } => gol.start(
-            output_file.unwrap().as_path(),
-            iterations,
-            time_per_iteration,
-            pb,
-        ),
+        Commands::GIF { output: _ } => {
+            let mut gif = GIF::new(gol);
+            gif.start(&output_file.unwrap(), iterations, time_per_iteration, pb)
+        }
         Commands::TUI => {
             let mut tui = TUI::new(gol);
             tui.start(iterations, time_per_iteration);

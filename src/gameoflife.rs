@@ -1,12 +1,10 @@
 //! # GameOfLife
 //! Contains a collection of structure necessary for building a Game of Life.
 
-use std::{path::Path, sync::RwLock};
+use std::sync::RwLock;
 
-use indicatif::ProgressBar;
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
-use plotters::prelude::*;
 
 /// Every Game of Life algorithm should implement this trait.
 pub trait GameOfLife {
@@ -24,35 +22,6 @@ pub trait GameOfLife {
     fn numx(&self) -> usize;
     /// Returns the number of rows
     fn numy(&self) -> usize;
-
-    /// Plots the field as a GIF
-    fn start(
-        &mut self,
-        file: &Path,
-        iterations: usize,
-        time_per_iteration: u32,
-        pb: Option<ProgressBar>,
-    ) {
-        let area = BitMapBackend::gif(file, (300, 300), time_per_iteration)
-            .unwrap()
-            .into_drawing_area();
-        let subareas = area.split_evenly((self.numx(), self.numy()));
-
-        for _ in 0..iterations {
-            for (id, subarea) in subareas.iter().enumerate() {
-                let x = id % self.numx();
-                let y = id / self.numy();
-                let color = if self.cell(x, y) { &WHITE } else { &BLACK };
-                subarea.fill(color).unwrap();
-            }
-            area.present().unwrap();
-            self.compute_next_generation();
-            if let Some(ref p) = pb {
-                p.inc(1);
-            }
-        }
-        println!("Saved Game of Life to {}.", file.display());
-    }
 }
 
 #[derive(Debug)]

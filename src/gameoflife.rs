@@ -120,23 +120,27 @@ impl GameOfLifeStd {
                 let top_border = if y > 1 { y - 1 } else { 0 };
                 self.field
                     .slice(s![left_border..right_border, top_border..bottom_border])
-                    .map(|x| *x.read().unwrap() as usize)
+                    .map(|x| (*x.read().unwrap() == self.rules.state) as usize)
                     .sum()
-                    - *self.field[[x, y]].read().unwrap() as usize
+                    - (*self.field[[x, y]].read().unwrap() == self.rules.state) as usize
             }
             NeighborRule::VonNeumann => {
                 let mut sum = 0;
-                if let Some(_) = self.cell(x - 1, y) {
-                    sum += 1;
+                if x != 0 {
+                    if let Some(cell) = self.cell(x - 1, y) {
+                        sum += (cell == self.rules.state) as usize;
+                    }
                 }
-                if let Some(_) = self.cell(x + 1, y) {
-                    sum += 1;
+                if let Some(cell) = self.cell(x + 1, y) {
+                    sum += (cell == self.rules.state) as usize;
                 }
-                if let Some(_) = self.cell(x, y - 1) {
-                    sum += 1;
+                if y != 0 {
+                    if let Some(cell) = self.cell(x, y - 1) {
+                        sum += (cell == self.rules.state) as usize;
+                    }
                 }
-                if let Some(_) = self.cell(x, y + 1) {
-                    sum += 1;
+                if let Some(cell) = self.cell(x, y + 1) {
+                    sum += (cell == self.rules.state) as usize;
                 }
                 sum
             }
@@ -224,25 +228,23 @@ impl GameOfLife for GameOfLifeConvolution {
         };
 
         let temp = convolve(
-            &self.field.map(|x| (*x == self.rules.state) as usize),
+            &self.field.map(|elem| (*elem == self.rules.state) as usize),
             &kernel,
             ndarray_ndimage::BorderMode::Constant(0),
             0,
         );
-        // TODO: Optimize
-        Zip::from(&mut self.field)
-            .and(&temp)
-            .par_for_each(|elem_field, count| {
-                if self.rules.birth[*count]
-                    || (*elem_field == self.rules.state && self.rules.survival[*count])
-                {
-                    *elem_field = self.rules.state;
+
+        let survive = temp.map(|elem| self.rules.survival[*elem] as u8);
+        let birth = temp.map(|elem| self.rules.birth[*elem] as u8);
+        self.field = self.field.map(|elem| (*elem == self.rules.state) as u8) * &survive
+            + (self.field.map(|elem| *elem) * survive.map(|elem| 1 - elem)).map(|elem| {
+                if *elem != 0 {
+                    *elem - 1
                 } else {
-                    if *elem_field != 0 {
-                        *elem_field -= 1;
-                    }
+                    0
                 }
             });
+        self.field += &(self.field.map(|elem| self.rules.state - elem) * birth);
     }
 
     fn cell(&self, x: usize, y: usize) -> Option<u8> {
@@ -269,7 +271,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn count_living_neighbors() {
+    fn count_living_neighbors_moore() {
         let arr = arr2(&[[1, 1, 1], [1, 1, 1], [1, 1, 1]]).map(|elem| RwLock::new(*elem));
         let rules = Rule::new(
             LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
@@ -285,6 +287,25 @@ mod test {
         }
 
         assert_eq!(temp, arr2(&[[3, 5, 3], [5, 8, 5], [3, 5, 3]]));
+    }
+
+    #[test]
+    fn count_living_neighbors_von_neumann() {
+        let arr = arr2(&[[1, 1, 1], [1, 1, 1], [1, 1, 1]]).map(|elem| RwLock::new(*elem));
+        let rules = Rule::new(
+            LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+            LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
+            1,
+            NeighborRule::VonNeumann,
+        );
+        let gol = GameOfLifeStd::new(arr, rules);
+
+        let mut temp = Array2::zeros((3, 3));
+        for ((x, y), _) in gol.field.indexed_iter() {
+            temp[[x, y]] = gol.count_living_neighbors(x, y);
+        }
+
+        assert_eq!(temp, arr2(&[[2, 3, 2], [3, 4, 3], [2, 3, 2]]));
     }
 
     #[test]
@@ -306,22 +327,79 @@ mod test {
 
     #[test]
     fn compute_next_generation_conv() {
-        let arr = arr2(&[[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
+        let state = 2;
+
+        let arr = arr2(&[
+            [state, state, state],
+            [state, state, state],
+            [state, state, state],
+        ]);
         let rules = Rule::new(
             LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
             LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
-            1,
+            state,
             NeighborRule::Moore,
         );
         let mut gol = GameOfLifeConvolution::new(arr, rules);
 
         gol.compute_next_generation();
 
-        assert_eq!(gol.field, arr2(&[[1, 0, 1], [0, 0, 0], [1, 0, 1]]));
+        assert_eq!(
+            gol.field,
+            arr2(&[
+                [state, state - 1, state],
+                [state - 1, state - 1, state - 1],
+                [state, state - 1, state]
+            ])
+        );
     }
 
     #[test]
-    fn algorithms() {
+    fn algorithms_moore() {
+        let mut rng = rand::thread_rng();
+
+        let numx: usize = 10;
+        let numy: usize = 10;
+        let field_vec_std: Vec<u8> = (0..numx * numy).map(|_| rng.gen_bool(0.3) as u8).collect();
+        let field_vec_conv = field_vec_std.clone();
+
+        let field_std = Array1::<u8>::from_vec(field_vec_std)
+            .map(|elem| RwLock::new(*elem))
+            .into_shape((numx, numy))
+            .unwrap();
+        let field_conv = Array1::<u8>::from_vec(field_vec_conv)
+            .into_shape((numx, numy))
+            .unwrap();
+
+        let rules_std = Rule::new(
+            LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+            LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
+            2,
+            NeighborRule::VonNeumann,
+        );
+        let rules_conv = rules_std.clone();
+
+        let mut gol_std = GameOfLifeStd::new(field_std, rules_std);
+        let mut gol_conv = GameOfLifeConvolution::new(field_conv, rules_conv);
+
+        assert_eq!(
+            gol_std.field.map(|elem| *elem.read().unwrap()),
+            gol_conv.field,
+            "standard and convolution differ"
+        );
+
+        gol_std.compute_next_generation();
+        gol_conv.compute_next_generation();
+
+        assert_eq!(
+            gol_std.field.map(|elem| *elem.read().unwrap()),
+            gol_conv.field,
+            "standard and convolution differ after one iteration"
+        );
+    }
+
+    #[test]
+    fn algorithms_von_neumann() {
         let mut rng = rand::thread_rng();
 
         let numx: usize = 10;
@@ -341,31 +419,25 @@ mod test {
             LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
             LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
             1,
-            NeighborRule::Moore,
+            NeighborRule::VonNeumann,
         );
         let rules_conv = rules_std.clone();
 
         let mut gol_std = GameOfLifeStd::new(field_std, rules_std);
         let mut gol_conv = GameOfLifeConvolution::new(field_conv, rules_conv);
 
-        assert!(
-            gol_std
-                .field
-                .iter()
-                .zip(gol_conv.field.iter())
-                .all(|(x, y)| *x.read().unwrap() == *y),
+        assert_eq!(
+            gol_std.field.map(|elem| *elem.read().unwrap()),
+            gol_conv.field,
             "standard and convolution differ"
         );
 
         gol_std.compute_next_generation();
         gol_conv.compute_next_generation();
 
-        assert!(
-            gol_std
-                .field
-                .iter()
-                .zip(gol_conv.field.iter())
-                .all(|(x, y)| *x.read().unwrap() == *y),
+        assert_eq!(
+            gol_std.field.map(|elem| *elem.read().unwrap()),
+            gol_conv.field,
             "standard and convolution differ after one iteration"
         );
     }

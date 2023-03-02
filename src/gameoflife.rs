@@ -1,11 +1,12 @@
-//! # GameOfLife
-//! Contains a collection of structure necessary for building a Game of Life.
+//! # Game of Life
+//! Contains a collection of structures necessary for building a Game of Life.
 
 use std::{fmt::Display, ops::Range, str::FromStr, sync::RwLock};
 
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
 
+/// Possible rules about which cells count as neighbors
 #[derive(Clone)]
 pub enum NeighborRule {
     Moore,
@@ -19,6 +20,7 @@ impl FromStr for NeighborRule {
         match input.to_lowercase().as_str() {
             "m" => Ok(NeighborRule::Moore),
             "moore" => Ok(NeighborRule::Moore),
+            "v" => Ok(NeighborRule::VonNeumann),
             "vn" => Ok(NeighborRule::VonNeumann),
             "vonneumann" => Ok(NeighborRule::VonNeumann),
             _ => Err(()),
@@ -35,6 +37,7 @@ impl Display for NeighborRule {
     }
 }
 
+/// Comfortable interfaces to create rules for survival and birth
 #[derive(Clone)]
 pub enum LifeRule {
     One(usize),
@@ -43,6 +46,7 @@ pub enum LifeRule {
 }
 
 impl LifeRule {
+    /// Returns the raw boolean array
     fn to_array(self) -> [bool; 9] {
         let mut return_array = [false; 9];
         match self {
@@ -73,7 +77,6 @@ pub struct Rule {
 
 impl Rule {
     pub fn new(survival: LifeRule, birth: LifeRule, state: u8, neighbor: NeighborRule) -> Self {
-        // TODO: more comfort in survival and birth
         Self {
             survival: survival.to_array(),
             birth: birth.to_array(),
@@ -83,7 +86,7 @@ impl Rule {
     }
 }
 
-/// Every Game of Life algorithm should implement this trait.
+/// Trait to generalize possible Game of Life algorithms
 pub trait GameOfLife {
     type Data;
 
@@ -93,7 +96,7 @@ pub trait GameOfLife {
     /// Compute the next generation
     fn compute_next_generation(&mut self);
 
-    /// Returns the value at (x,y)
+    /// Returns the value at (x,y) and None if index out of bounds
     fn cell(&self, x: usize, y: usize) -> Option<u8>;
     /// Returns the number of columns
     fn numx(&self) -> usize;

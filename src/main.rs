@@ -15,6 +15,7 @@ use inquire::Confirm;
 use ndarray::{self, Array1};
 use rand::{self, Rng};
 
+/// CLI Parser using `clap`
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct CLI {
@@ -55,6 +56,7 @@ struct CLI {
     state: Option<u8>,
 }
 
+/// Subcommands of CLI Parser
 #[derive(Subcommand)]
 enum Commands {
     /// Prints the Game of Life in a GIF, takes file name of GIF
@@ -93,6 +95,7 @@ impl Display for Algorithm {
     }
 }
 
+/// Arguments in the final data types
 struct Arguments {
     output_file: Option<PathBuf>,
     iterations: usize,

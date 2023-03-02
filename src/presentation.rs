@@ -1,3 +1,6 @@
+//! # Frontends
+//! Contains possible ways to present/plot the Game of Life.
+
 use crate::gameoflife::*;
 use indicatif::ProgressBar;
 use plotters::prelude::*;
@@ -13,6 +16,7 @@ use termion::raw::IntoRawMode;
 use termion::raw::RawTerminal;
 use termion::screen::{AlternateScreen, IntoAlternateScreen, ToMainScreen};
 
+/// Plot the Game of Life as a GIF using `plotters`
 pub struct GIF<G: GameOfLife> {
     gameoflife: G,
 }
@@ -22,7 +26,8 @@ impl<G: GameOfLife> GIF<G> {
         Self { gameoflife }
     }
 
-    /// Plots the field as a GIF
+    /// Starts the Game of Life
+    /// `timer_per_iteration`: ms
     pub fn start(
         &mut self,
         file: &Path,
@@ -68,6 +73,7 @@ const BOTTOM_LEFT_CORNER: &str = "└";
 const BOTTOM_RIGHT_CORNER: &str = "┘";
 const CONCEALED: &str = "▒";
 
+/// Plot the Game of Life in the terminal using `termion`
 pub struct TUI<G: GameOfLife> {
     gol: G,
     screen: AlternateScreen<RawTerminal<Stdout>>,

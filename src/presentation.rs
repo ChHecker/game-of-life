@@ -11,7 +11,7 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::raw::RawTerminal;
-use termion::screen::{AlternateScreen, IntoAlternateScreen};
+use termion::screen::{AlternateScreen, IntoAlternateScreen, ToMainScreen};
 
 pub struct GIF<G: GameOfLife> {
     gameoflife: G,
@@ -75,8 +75,19 @@ pub struct TUI<G: GameOfLife> {
 
 impl<G: GameOfLife> TUI<G> {
     pub fn new(gol: G) -> Self {
+        std::panic::set_hook(Box::new(move |info| {
+            write!(
+                std::io::stdout().into_raw_mode().unwrap(),
+                "{}",
+                ToMainScreen
+            )
+            .unwrap();
+            write!(std::io::stderr(), "{:?}", info).unwrap();
+        }));
+
         let screen = io::stdout().into_raw_mode().unwrap();
         let screen = screen.into_alternate_screen().unwrap();
+
         Self { gol, screen }
     }
 

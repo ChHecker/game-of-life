@@ -1,7 +1,7 @@
 //! # GameOfLife
 //! Contains a collection of structure necessary for building a Game of Life.
 
-use std::sync::RwLock;
+use std::{ops::Range, sync::RwLock};
 
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
@@ -10,6 +10,29 @@ use ndarray_ndimage::convolve;
 pub enum NeighborRule {
     Moore,
     VonNeumann,
+}
+
+#[derive(Clone)]
+pub enum LifeRule {
+    One(usize),
+    Range(Range<usize>),
+    Raw([bool; 9]),
+}
+
+impl LifeRule {
+    fn to_array(self) -> [bool; 9] {
+        let mut return_array = [false; 9];
+        match self {
+            LifeRule::One(one) => return_array[one] = true,
+            LifeRule::Range(range) => {
+                for i in range {
+                    return_array[i] = true;
+                }
+            }
+            LifeRule::Raw(array) => return_array = array,
+        }
+        return_array
+    }
 }
 
 /// Rule of a Game of Life
@@ -26,11 +49,11 @@ pub struct Rule {
 }
 
 impl Rule {
-    pub fn new(survival: [bool; 9], birth: [bool; 9], state: u8, neighbor: NeighborRule) -> Self {
+    pub fn new(survival: LifeRule, birth: LifeRule, state: u8, neighbor: NeighborRule) -> Self {
         // TODO: more comfort in survival and birth
         Self {
-            survival,
-            birth,
+            survival: survival.to_array(),
+            birth: birth.to_array(),
             state,
             neighbor,
         }
@@ -226,8 +249,8 @@ mod test {
     fn count_living_neighbors() {
         let arr = arr2(&[[1, 1, 1], [1, 1, 1], [1, 1, 1]]).map(|elem| RwLock::new(*elem));
         let rules = Rule::new(
-            [false, false, true, true, false, false, false, false, false],
-            [false, false, false, true, false, false, false, false, false],
+            LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+            LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
             1,
             NeighborRule::Moore,
         );
@@ -245,8 +268,8 @@ mod test {
     fn compute_next_generation_std() {
         let arr = arr2(&[[1, 1, 1], [1, 1, 1], [1, 1, 1]]).map(|elem| RwLock::new(*elem));
         let rules = Rule::new(
-            [false, false, true, true, false, false, false, false, false],
-            [false, false, false, true, false, false, false, false, false],
+            LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+            LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
             1,
             NeighborRule::Moore,
         );
@@ -262,8 +285,8 @@ mod test {
     fn compute_next_generation_conv() {
         let arr = arr2(&[[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
         let rules = Rule::new(
-            [false, false, true, true, false, false, false, false, false],
-            [false, false, false, true, false, false, false, false, false],
+            LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+            LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
             1,
             NeighborRule::Moore,
         );
@@ -292,8 +315,8 @@ mod test {
             .unwrap();
 
         let rules_std = Rule::new(
-            [false, false, true, true, false, false, false, false, false],
-            [false, false, false, true, false, false, false, false, false],
+            LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+            LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
             1,
             NeighborRule::Moore,
         );

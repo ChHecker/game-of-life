@@ -238,8 +238,8 @@ fn main() {
         .collect();
 
     let rules = Rule::new(
-        [false, false, true, true, false, false, false, false, false],
-        [false, false, false, true, false, false, false, false, false],
+        LifeRule::Raw([false, false, true, true, false, false, false, false, false]),
+        LifeRule::Raw([false, false, false, true, false, false, false, false, false]),
         1,
         NeighborRule::Moore,
     );

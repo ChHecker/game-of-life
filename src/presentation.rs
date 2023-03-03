@@ -4,6 +4,7 @@
 use crate::gameoflife::*;
 use indicatif::ProgressBar;
 use plotters::prelude::*;
+use std::fmt::Display;
 use std::io::{self, Stdout, Write};
 use std::path::Path;
 use std::thread::sleep;
@@ -15,6 +16,20 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::raw::RawTerminal;
 use termion::screen::{AlternateScreen, IntoAlternateScreen, ToMainScreen};
+
+pub enum Presentations {
+    Gif,
+    Tui,
+}
+
+impl Display for Presentations {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Presentations::Gif => write!(f, "GIF"),
+            Presentations::Tui => write!(f, "TUI"),
+        }
+    }
+}
 
 /// Plot the Game of Life as a GIF using `plotters`
 pub struct GIF<G: GameOfLife> {
@@ -88,7 +103,7 @@ impl<G: GameOfLife> TUI<G> {
                 ToMainScreen
             )
             .unwrap();
-            write!(std::io::stderr(), "{:?}", info).unwrap();
+            eprint!("{:?}", info);
         }));
 
         let screen = io::stdout().into_raw_mode().unwrap();
@@ -131,36 +146,36 @@ impl<G: GameOfLife> TUI<G> {
         write!(screen, "{}", cursor::Hide).unwrap();
 
         // Write the upper part of the frame.
-        screen.write(TOP_LEFT_CORNER.as_bytes()).unwrap();
+        screen.write_all(TOP_LEFT_CORNER.as_bytes()).unwrap();
         for _ in 0..width {
-            screen.write(HORZ_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(HORZ_BOUNDARY.as_bytes()).unwrap();
         }
-        screen.write(TOP_RIGHT_CORNER.as_bytes()).unwrap();
-        screen.write(b"\n\r").unwrap();
+        screen.write_all(TOP_RIGHT_CORNER.as_bytes()).unwrap();
+        screen.write_all(b"\n\r").unwrap();
 
         for y in 0..height {
             // The left part of the frame
-            screen.write(VERT_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(VERT_BOUNDARY.as_bytes()).unwrap();
 
             for x in 0..width {
                 if self.gol.cell(x, y).unwrap() > 0 {
-                    screen.write(CONCEALED.as_bytes()).unwrap();
+                    screen.write_all(CONCEALED.as_bytes()).unwrap();
                 } else {
-                    screen.write(b" ").unwrap();
+                    screen.write_all(b" ").unwrap();
                 }
             }
 
             // The right part of the frame.
-            screen.write(VERT_BOUNDARY.as_bytes()).unwrap();
-            screen.write(b"\n\r").unwrap();
+            screen.write_all(VERT_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(b"\n\r").unwrap();
         }
 
         // Write the lower part of the frame.
-        screen.write(BOTTOM_LEFT_CORNER.as_bytes()).unwrap();
+        screen.write_all(BOTTOM_LEFT_CORNER.as_bytes()).unwrap();
         for _ in 0..width {
-            screen.write(HORZ_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(HORZ_BOUNDARY.as_bytes()).unwrap();
         }
-        screen.write(BOTTOM_RIGHT_CORNER.as_bytes()).unwrap();
+        screen.write_all(BOTTOM_RIGHT_CORNER.as_bytes()).unwrap();
 
         screen.flush().unwrap();
     }
@@ -174,9 +189,9 @@ impl<G: GameOfLife> TUI<G> {
             write!(screen, "{}", cursor::Goto(2, y + 2)).unwrap();
             for x in 0..width {
                 if self.gol.cell(x as usize, y as usize).unwrap() > 0 {
-                    screen.write(CONCEALED.as_bytes()).unwrap();
+                    screen.write_all(CONCEALED.as_bytes()).unwrap();
                 } else {
-                    screen.write(b" ").unwrap();
+                    screen.write_all(b" ").unwrap();
                 }
             }
         }

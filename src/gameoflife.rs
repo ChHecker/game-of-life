@@ -39,21 +39,27 @@ impl Display for NeighborRule {
 
 /// Comfortable interfaces to create rules for survival and birth
 #[derive(Clone)]
-pub enum LifeRule {
+pub enum LifeRule<'a> {
     One(usize),
     Range(Range<usize>),
+    Numbers(&'a [usize]),
     Raw([bool; 9]),
 }
 
-impl LifeRule {
+impl<'a> LifeRule<'a> {
     /// Returns the raw boolean array
-    fn to_array(self) -> [bool; 9] {
+    fn into_array(self) -> [bool; 9] {
         let mut return_array = [false; 9];
         match self {
             LifeRule::One(one) => return_array[one] = true,
             LifeRule::Range(range) => {
                 for i in range {
                     return_array[i] = true;
+                }
+            }
+            LifeRule::Numbers(array) => {
+                for i in array {
+                    return_array[*i] = true;
                 }
             }
             LifeRule::Raw(array) => return_array = array,
@@ -69,19 +75,30 @@ impl LifeRule {
 /// - `neighbor`: Neighbor counting algorithm
 #[derive(Clone)]
 pub struct Rule {
-    survival: [bool; 9],
-    birth: [bool; 9],
-    state: u8,
-    neighbor: NeighborRule,
+    pub survival: [bool; 9],
+    pub birth: [bool; 9],
+    pub state: u8,
+    pub neighbor: NeighborRule,
 }
 
 impl Rule {
     pub fn new(survival: LifeRule, birth: LifeRule, state: u8, neighbor: NeighborRule) -> Self {
         Self {
-            survival: survival.to_array(),
-            birth: birth.to_array(),
+            survival: survival.into_array(),
+            birth: birth.into_array(),
             state,
             neighbor,
+        }
+    }
+}
+
+impl Default for Rule {
+    fn default() -> Self {
+        Self {
+            survival: [false, false, true, true, false, false, false, false, false],
+            birth: [false, false, false, true, false, false, false, false, false],
+            state: 1,
+            neighbor: NeighborRule::Moore,
         }
     }
 }
@@ -187,7 +204,7 @@ impl GameOfLife for GameOfLifeStd {
 
     fn cell(&self, x: usize, y: usize) -> Option<u8> {
         if let Some(cell) = self.field.get((x, y)) {
-            return Some(cell.read().unwrap().clone());
+            return Some(*cell.read().unwrap());
         }
         None
     }
@@ -252,7 +269,7 @@ impl GameOfLife for GameOfLifeConvolution {
 
     fn cell(&self, x: usize, y: usize) -> Option<u8> {
         if let Some(cell) = self.field.get((x, y)) {
-            return Some(cell.clone());
+            return Some(*cell);
         }
         None
     }

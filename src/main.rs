@@ -262,6 +262,7 @@ impl Arguments {
         let (numx, numy) = match presentation {
             Presentations::Gif => (
                 CustomType::<u32>::new("How many columns should the field have?")
+                    .with_default(10)
                     .with_validator(|i: &u32| {
                         if *i == 0 {
                             return Ok(Validation::Invalid("Has to be greater than 0".into()));
@@ -270,6 +271,7 @@ impl Arguments {
                     })
                     .prompt()?,
                 CustomType::<u32>::new("How many rows should the field have?")
+                    .with_default(10)
                     .with_validator(|i: &u32| {
                         if *i == 0 {
                             return Ok(Validation::Invalid("Has to be greater than 0".into()));

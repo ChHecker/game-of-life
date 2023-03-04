@@ -2,7 +2,7 @@
 name = "gameoflife"
 authors = ["Christopher Hecker"]
 version = "0.4.0"
-description = "An efficient implementation of Conway's Game of Life"
+description = "An blazingly fast implementation of Conway's Game of Life"
 license = "MIT"
 edition = "2021"
 

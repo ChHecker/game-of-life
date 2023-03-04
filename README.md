@@ -32,16 +32,16 @@ The convolution algorithm, however, is about 17x faster. It uses [`ndarray-ndima
 ## Licenses
 Thanks to all authors for their great codes. The code to drawing the Game of Life in the terminal was inspired by minesweeper in [`termion`](https://crates.io/crates/termion).
 
-| Crate                                                         | Author(s)                                                    | License        |
-| ------------------------------------------------------------- | ------------------------------------------------------------ | -------------- |
-| [`clap`](https://crates.io/crates/clap)                       | rust-cli, clap-rs, Kevin K.                                  | MIT/Apache-2.0 |
-| [`criterion`](https://crates.io/crates/criterion)             | rust-bus, Brook Heisler                                      | MIT/Apache-2.0 |
-| [`exitcode`](https://crates.io/crates/exitcode)               | Ben Wilber                                                   | Apache-2.0     |
-| [`indicatif`](https://crates.io/crates/indicatif)             | Armin Ronacher, Dirkjan Ochtman                              | MIT            |
-| [`inquire`](https://crates.io/crates/inquire)                 | Mikael Mello                                                 | MIT            |
-| [`ndarray`](https://crates.io/crates/ndarray)                 | bluss, Jim Turner                                            | MIT/Apache-2.0 |
-| [`ndarray-ndimage`](https://crates.io/crates/ndarray-ndimage) | Nil Goyette                                                  | MIT/Apache-2.0 |
-| [`plotters`](https://crates.io/crates/plotters)               | Hao Hou                                                      | MIT            |
-| [`rand`](https://crates.io/crates/rand)                       | rust-lang-nursery, rust-random, Alex Crichton, Diggory Hardy | MIT/Apache-2.0 |
-| [`rayon`](https://crates.io/crates/rayon)                     | Josh Stone, Niko Matsakis                                    | MIT/Apache-2.0 |
-| [`termion`](https://crates.io/crates/termion)                 | Jeremy Soller, Michael Murphy, ticki                         | MIT            |
+| Crate                                                         | Author(s)                                 | License        |
+| ------------------------------------------------------------- | ----------------------------------------- | -------------- |
+| [`clap`](https://crates.io/crates/clap)                       | rust-cli, clap-rs, Kevin K.               | MIT/Apache-2.0 |
+| [`criterion`](https://crates.io/crates/criterion)             | rust-bus, Brook Heisler                   | MIT/Apache-2.0 |
+| [`exitcode`](https://crates.io/crates/exitcode)               | Ben Wilber                                | Apache-2.0     |
+| [`indicatif`](https://crates.io/crates/indicatif)             | Armin Ronacher, Dirkjan Ochtman           | MIT            |
+| [`inquire`](https://crates.io/crates/inquire)                 | Mikael Mello                              | MIT            |
+| [`ndarray`](https://crates.io/crates/ndarray)                 | bluss, Jim Turner                         | MIT/Apache-2.0 |
+| [`ndarray-ndimage`](https://crates.io/crates/ndarray-ndimage) | Nil Goyette                               | MIT/Apache-2.0 |
+| [`plotters`](https://crates.io/crates/plotters)               | Hao Hou                                   | MIT            |
+| [`rand`](https://crates.io/crates/rand)                       | rust-random, Alex Crichton, Diggory Hardy | MIT/Apache-2.0 |
+| [`rayon`](https://crates.io/crates/rayon)                     | Josh Stone, Niko Matsakis                 | MIT/Apache-2.0 |
+| [`termion`](https://crates.io/crates/termion)                 | Jeremy Soller, Michael Murphy, ticki      | MIT            |

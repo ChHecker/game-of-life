@@ -10,7 +10,10 @@ edition = "2021"
 clap = { version = "4.1.4", features = ["derive"] }
 exitcode = "1.1.2"
 indicatif = "0.17.3"
-inquire = "0.5.3"
+inquire = { version = "0.5.3", default-features = false, features = [
+    "macros",
+    "termion",
+] }
 ndarray = { version = "0.15.6", features = ["rayon"] }
 ndarray-ndimage = "0.3.0"
 plotters = "0.3.4"

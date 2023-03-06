@@ -249,16 +249,11 @@ impl Arguments {
             })
             .prompt()?;
 
-        let time_per_iteration = match presentation {
-            Presentations::Gif => Duration::from_millis(0),
-            Presentations::Tui => {
-                let time_answer =
-                    CustomType::<u64>::new("How much time should every iteration take (in ms)?")
-                        .with_default(500)
-                        .prompt()?;
-                Duration::from_millis(time_answer)
-            }
-        };
+        let time_answer =
+            CustomType::<u64>::new("How much time should every iteration take (in ms)?")
+                .with_default(500)
+                .prompt()?;
+        let time_per_iteration = Duration::from_millis(time_answer);
 
         let (numx, numy) = match presentation {
             Presentations::Gif => (

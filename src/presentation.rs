@@ -2,11 +2,11 @@
 //! Contains possible ways to present/plot the Game of Life.
 
 use crate::gameoflife::*;
+use gif::{Encoder, EncodingError, Frame, Repeat};
 use indicatif::ProgressBar;
-use plotters::prelude::*;
 use std::fmt::Display;
+use std::fs::File;
 use std::io::{self, Stdout, Write};
-use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 use termion::async_stdin;
@@ -45,38 +45,50 @@ impl<G: GameOfLife> GIF<G> {
     /// `timer_per_iteration`: ms
     pub fn start(
         &mut self,
-        file: &Path,
+        file: &File,
         iterations: usize,
         time_per_iteration: Duration,
         pb: Option<ProgressBar>,
-    ) {
-        let area = BitMapBackend::gif(
+    ) -> Result<(), EncodingError> {
+        let mut gif = Encoder::new(
             file,
-            (300, 300),
-            time_per_iteration.as_millis().try_into().unwrap(),
-        )
-        .unwrap()
-        .into_drawing_area();
-        let subareas = area.split_evenly((self.gameoflife.numx(), self.gameoflife.numy()));
+            self.gameoflife.numx().try_into().unwrap(),
+            self.gameoflife.numy().try_into().unwrap(),
+            &[],
+        )?;
+        gif.set_repeat(Repeat::Infinite)?;
 
-        for _ in 0..iterations {
-            for (id, subarea) in subareas.iter().enumerate() {
-                let x = id % self.gameoflife.numx();
-                let y = id / self.gameoflife.numy();
-                let color = if self.gameoflife.cell(x, y).unwrap() > 0 {
-                    &WHITE
-                } else {
-                    &BLACK
-                };
-                subarea.fill(color).unwrap();
+        for _ in 0..iterations + 1 {
+            let mut pixels: Vec<Vec<Vec<u8>>> =
+                vec![vec![vec![0; 3]; self.gameoflife.numy()]; self.gameoflife.numx()];
+            for y in 0..self.gameoflife.numy() {
+                for x in 0..self.gameoflife.numx() {
+                    let color = [255, 255, 255].map(|elem| {
+                        elem * self.gameoflife.cell(x, y).unwrap() / self.gameoflife.state()
+                    });
+                    pixels[x][y] = color.to_vec();
+                }
             }
-            area.present().unwrap();
+            let pixels: Vec<u8> = pixels
+                .iter()
+                .flatten()
+                .flatten()
+                .map(|elem| *elem)
+                .collect();
+            let mut frame = Frame::from_rgb(
+                self.gameoflife.numx() as u16,
+                self.gameoflife.numy() as u16,
+                &pixels,
+            );
+            frame.delay = time_per_iteration.as_millis() as u16 / 10;
+            gif.write_frame(&frame)?;
+
             self.gameoflife.compute_next_generation();
             if let Some(ref p) = pb {
                 p.inc(1);
             }
         }
-        println!("Saved Game of Life to {}.", file.display());
+        Ok(())
     }
 }
 
@@ -121,7 +133,7 @@ impl<G: GameOfLife> TUI<G> {
         let sleep_how_often = time_per_iteration.as_millis() / polling_time;
         let remaining_sleep = time_per_iteration.as_millis() - sleep_how_often * polling_time;
 
-        for _ in 0..iterations {
+        for _ in 0..iterations + 1 {
             self.gol.compute_next_generation();
             self.draw_field()?;
             for _ in 0..sleep_how_often {

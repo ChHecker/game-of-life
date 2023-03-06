@@ -104,7 +104,7 @@ impl Default for Rule {
 }
 
 /// Trait to generalize possible Game of Life algorithms
-pub trait GameOfLife {
+pub trait GameOfLife: IntoIterator {
     type Data;
 
     /// Generate a new Game of Life from initial field
@@ -119,6 +119,25 @@ pub trait GameOfLife {
     fn numx(&self) -> usize;
     /// Returns the number of rows
     fn numy(&self) -> usize;
+    /// Returns the state
+    fn state(&self) -> u8;
+}
+
+/// Iterator over Game of Life field
+pub struct GameOfLifeIter<G: GameOfLife> {
+    x: usize,
+    y: usize,
+    gameoflife: G,
+}
+
+impl<G: GameOfLife> Iterator for GameOfLifeIter<G> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.y += (self.x + 1) / self.gameoflife.numx();
+        self.x = (self.x + 1) % self.gameoflife.numx();
+        self.gameoflife.cell(self.x, self.y)
+    }
 }
 
 /// Computes the time steps using ordinary iterations.
@@ -164,6 +183,20 @@ impl GameOfLifeStd {
                 }
                 sum
             }
+        }
+    }
+}
+
+impl IntoIterator for GameOfLifeStd {
+    type Item = u8;
+
+    type IntoIter = GameOfLifeIter<GameOfLifeStd>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        GameOfLifeIter {
+            x: 0,
+            y: 0,
+            gameoflife: self,
         }
     }
 }
@@ -216,6 +249,10 @@ impl GameOfLife for GameOfLifeStd {
     fn numy(&self) -> usize {
         self.numy
     }
+
+    fn state(&self) -> u8 {
+        self.rules.state
+    }
 }
 
 /// Computes the time steps using `ndarray_ndimage`'s `convolve`.
@@ -224,6 +261,20 @@ pub struct GameOfLifeConvolution {
     rules: Rule,
     numx: usize,
     numy: usize,
+}
+
+impl IntoIterator for GameOfLifeConvolution {
+    type Item = u8;
+
+    type IntoIter = GameOfLifeIter<GameOfLifeConvolution>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        GameOfLifeIter {
+            x: 0,
+            y: 0,
+            gameoflife: self,
+        }
+    }
 }
 
 impl GameOfLife for GameOfLifeConvolution {
@@ -280,6 +331,10 @@ impl GameOfLife for GameOfLifeConvolution {
 
     fn numy(&self) -> usize {
         self.numy
+    }
+
+    fn state(&self) -> u8 {
+        self.rules.state
     }
 }
 

@@ -1,6 +1,7 @@
 use core::panic;
 use std::{
     fmt::Display,
+    fs::File,
     path::{Path, PathBuf},
     str::FromStr,
     sync::RwLock,
@@ -419,6 +420,7 @@ fn handle_path(output_file: &str) -> PathBuf {
             Err(e) => panic!("{e}"),
         }
     }
+
     output_file
 }
 
@@ -462,8 +464,11 @@ fn start<G: GameOfLife>(
 ) {
     match presentation {
         Presentations::Gif => {
+            let file = File::create(output_file.as_ref().unwrap()).unwrap();
             let mut gif = GIF::new(gol);
-            gif.start(&output_file.unwrap(), iterations, time_per_iteration, pb)
+            gif.start(&file, iterations, time_per_iteration, pb)
+                .expect("running GIF presentation");
+            println!("Saved Game of Life to {}.", output_file.unwrap().display());
         }
         Presentations::Tui => {
             let mut tui = TUI::new(gol);

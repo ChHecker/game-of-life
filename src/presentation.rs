@@ -114,8 +114,8 @@ impl<G: GameOfLife> TUI<G> {
 
     /// Starts the Game of Life
     /// `timer_per_iteration`: ms
-    pub fn start(&mut self, iterations: usize, time_per_iteration: Duration) {
-        self.initialize_field().unwrap();
+    pub fn start(&mut self, iterations: usize, time_per_iteration: Duration) -> io::Result<()> {
+        self.initialize_field()?;
         let mut stdin = async_stdin().keys();
         let polling_time = 200;
         let sleep_how_often = time_per_iteration.as_millis() / polling_time;
@@ -123,18 +123,20 @@ impl<G: GameOfLife> TUI<G> {
 
         for _ in 0..iterations {
             self.gol.compute_next_generation();
-            self.draw_field().unwrap();
+            self.draw_field()?;
             for _ in 0..sleep_how_often {
                 for key in &mut stdin {
-                    let key = key.unwrap();
+                    let key = key?;
                     if let Key::Char('q') = key {
-                        return;
+                        return Ok(());
                     }
                 }
                 sleep(Duration::from_millis(polling_time as u64))
             }
             sleep(Duration::from_millis(remaining_sleep as u64))
         }
+
+        Ok(())
     }
 
     /// Initializes the TUI

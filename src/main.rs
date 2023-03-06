@@ -472,7 +472,8 @@ fn start<G: GameOfLife>(
         }
         Presentations::Tui => {
             let mut tui = TUI::new(gol);
-            tui.start(iterations, time_per_iteration);
+            tui.start(iterations, time_per_iteration)
+                .expect("running TUI presentation");
         }
     }
 }

@@ -41,7 +41,7 @@ Thanks to all authors for their great codes. The code to drawing the Game of Lif
 | [`inquire`](https://crates.io/crates/inquire)                 | Mikael Mello                              | MIT            |
 | [`ndarray`](https://crates.io/crates/ndarray)                 | bluss, Jim Turner                         | MIT/Apache-2.0 |
 | [`ndarray-ndimage`](https://crates.io/crates/ndarray-ndimage) | Nil Goyette                               | MIT/Apache-2.0 |
-| [`plotters`](https://crates.io/crates/plotters)               | Hao Hou                                   | MIT            |
+| [`gif`](https://crates.io/crates/gif)                         | Jonathan Behrens, Andreas Molzer          | MIT/Apache-2.0 |
 | [`rand`](https://crates.io/crates/rand)                       | rust-random, Alex Crichton, Diggory Hardy | MIT/Apache-2.0 |
 | [`rayon`](https://crates.io/crates/rayon)                     | Josh Stone, Niko Matsakis                 | MIT/Apache-2.0 |
 | [`termion`](https://crates.io/crates/termion)                 | Jeremy Soller, Michael Murphy, ticki      | MIT            |

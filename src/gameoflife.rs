@@ -119,6 +119,8 @@ pub trait GameOfLife: IntoIterator {
     fn numx(&self) -> usize;
     /// Returns the number of rows
     fn numy(&self) -> usize;
+    /// Returns the state
+    fn state(&self) -> u8;
 }
 
 /// Iterator over Game of Life field
@@ -247,6 +249,10 @@ impl GameOfLife for GameOfLifeStd {
     fn numy(&self) -> usize {
         self.numy
     }
+
+    fn state(&self) -> u8 {
+        self.rules.state
+    }
 }
 
 /// Computes the time steps using `ndarray_ndimage`'s `convolve`.
@@ -325,6 +331,10 @@ impl GameOfLife for GameOfLifeConvolution {
 
     fn numy(&self) -> usize {
         self.numy
+    }
+
+    fn state(&self) -> u8 {
+        self.rules.state
     }
 }
 

@@ -61,20 +61,15 @@ impl<G: GameOfLife> GIF<G> {
         for _ in 0..iterations + 1 {
             let mut pixels: Vec<Vec<Vec<u8>>> =
                 vec![vec![vec![0; 3]; self.gameoflife.numy()]; self.gameoflife.numx()];
-            for y in 0..self.gameoflife.numy() {
-                for x in 0..self.gameoflife.numx() {
+            for (y, row) in pixels.iter_mut().enumerate() {
+                for (x, pixel) in row.iter_mut().enumerate() {
                     let color = [255, 255, 255].map(|elem| {
                         elem * self.gameoflife.cell(x, y).unwrap() / self.gameoflife.state()
                     });
-                    pixels[x][y] = color.to_vec();
+                    *pixel = color.to_vec();
                 }
             }
-            let pixels: Vec<u8> = pixels
-                .iter()
-                .flatten()
-                .flatten()
-                .map(|elem| *elem)
-                .collect();
+            let pixels: Vec<u8> = pixels.iter().flatten().flatten().copied().collect();
             let mut frame = Frame::from_rgb(
                 self.gameoflife.numx() as u16,
                 self.gameoflife.numy() as u16,

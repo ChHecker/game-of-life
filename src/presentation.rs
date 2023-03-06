@@ -115,7 +115,7 @@ impl<G: GameOfLife> TUI<G> {
     /// Starts the Game of Life
     /// `timer_per_iteration`: ms
     pub fn start(&mut self, iterations: usize, time_per_iteration: Duration) {
-        self.initialize_field();
+        self.initialize_field().unwrap();
         let mut stdin = async_stdin().keys();
         let polling_time = 200;
         let sleep_how_often = time_per_iteration.as_millis() / polling_time;
@@ -123,7 +123,7 @@ impl<G: GameOfLife> TUI<G> {
 
         for _ in 0..iterations {
             self.gol.compute_next_generation();
-            self.draw_field();
+            self.draw_field().unwrap();
             for _ in 0..sleep_how_often {
                 for key in &mut stdin {
                     let key = key.unwrap();
@@ -138,65 +138,68 @@ impl<G: GameOfLife> TUI<G> {
     }
 
     /// Initializes the TUI
-    fn initialize_field(&mut self) {
+    fn initialize_field(&mut self) -> std::io::Result<()> {
         let screen = &mut self.screen;
         let width = self.gol.numx();
         let height = self.gol.numy();
 
-        write!(screen, "{}", cursor::Hide).unwrap();
+        write!(screen, "{}", cursor::Hide)?;
 
         // Write the upper part of the frame.
-        screen.write_all(TOP_LEFT_CORNER.as_bytes()).unwrap();
+        screen.write_all(TOP_LEFT_CORNER.as_bytes())?;
         for _ in 0..width {
-            screen.write_all(HORZ_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(HORZ_BOUNDARY.as_bytes())?;
         }
-        screen.write_all(TOP_RIGHT_CORNER.as_bytes()).unwrap();
-        screen.write_all(b"\n\r").unwrap();
+        screen.write_all(TOP_RIGHT_CORNER.as_bytes())?;
+        screen.write_all(b"\n\r")?;
 
         for y in 0..height {
             // The left part of the frame
-            screen.write_all(VERT_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(VERT_BOUNDARY.as_bytes())?;
 
             for x in 0..width {
                 if self.gol.cell(x, y).unwrap() > 0 {
-                    screen.write_all(CONCEALED.as_bytes()).unwrap();
+                    screen.write_all(CONCEALED.as_bytes())?;
                 } else {
-                    screen.write_all(b" ").unwrap();
+                    screen.write_all(b" ")?;
                 }
             }
 
             // The right part of the frame.
-            screen.write_all(VERT_BOUNDARY.as_bytes()).unwrap();
-            screen.write_all(b"\n\r").unwrap();
+            screen.write_all(VERT_BOUNDARY.as_bytes())?;
+            screen.write_all(b"\n\r")?;
         }
 
         // Write the lower part of the frame.
-        screen.write_all(BOTTOM_LEFT_CORNER.as_bytes()).unwrap();
+        screen.write_all(BOTTOM_LEFT_CORNER.as_bytes())?;
         for _ in 0..width {
-            screen.write_all(HORZ_BOUNDARY.as_bytes()).unwrap();
+            screen.write_all(HORZ_BOUNDARY.as_bytes())?;
         }
-        screen.write_all(BOTTOM_RIGHT_CORNER.as_bytes()).unwrap();
+        screen.write_all(BOTTOM_RIGHT_CORNER.as_bytes())?;
 
-        screen.flush().unwrap();
+        screen.flush()?;
+
+        Ok(())
     }
 
-    fn draw_field(&mut self) {
+    fn draw_field(&mut self) -> std::io::Result<()> {
         let screen = &mut self.screen;
         let width = u16::try_from(self.gol.numx()).unwrap();
         let height = u16::try_from(self.gol.numy()).unwrap();
 
         for y in 0..height {
-            write!(screen, "{}", cursor::Goto(2, y + 2)).unwrap();
+            write!(screen, "{}", cursor::Goto(2, y + 2))?;
             for x in 0..width {
                 if self.gol.cell(x as usize, y as usize).unwrap() > 0 {
-                    screen.write_all(CONCEALED.as_bytes()).unwrap();
+                    screen.write_all(CONCEALED.as_bytes())?;
                 } else {
-                    screen.write_all(b" ").unwrap();
+                    screen.write_all(b" ")?;
                 }
             }
         }
+        screen.flush()?;
 
-        screen.flush().unwrap();
+        Ok(())
     }
 }
 

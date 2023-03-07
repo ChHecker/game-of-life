@@ -4,6 +4,7 @@
 use crate::gameoflife::*;
 use gif::{Encoder, EncodingError, Frame, Repeat};
 use indicatif::ProgressBar;
+use ndarray::Array3;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, Stdout, Write};
@@ -59,17 +60,13 @@ impl<G: GameOfLife> GIF<G> {
         gif.set_repeat(Repeat::Infinite)?;
 
         for _ in 0..iterations + 1 {
-            let mut pixels: Vec<Vec<Vec<u8>>> =
-                vec![vec![vec![0; 3]; self.gameoflife.numy()]; self.gameoflife.numx()];
-            for (y, row) in pixels.iter_mut().enumerate() {
-                for (x, pixel) in row.iter_mut().enumerate() {
-                    let color = [255, 255, 255].map(|elem| {
-                        elem * self.gameoflife.cell(x, y).unwrap() / self.gameoflife.state()
-                    });
-                    *pixel = color.to_vec();
-                }
+            let mut pixels =
+                Array3::<u8>::from_elem((self.gameoflife.numy(), self.gameoflife.numx(), 3), 255);
+            for ((y, x, _), color) in pixels.indexed_iter_mut() {
+                *color = (*color as f32 * self.gameoflife.cell(x, y).unwrap() as f32
+                    / self.gameoflife.state() as f32) as u8;
             }
-            let pixels: Vec<u8> = pixels.iter().flatten().flatten().copied().collect();
+            let pixels: Vec<u8> = pixels.iter().cloned().collect();
             let mut frame = Frame::from_rgb(
                 self.gameoflife.numx() as u16,
                 self.gameoflife.numy() as u16,

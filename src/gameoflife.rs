@@ -6,7 +6,7 @@ use std::{fmt::Display, ops::Range, str::FromStr, sync::RwLock};
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;
 
-/// Possible rules about which cells count as neighbors
+/// Possible rules about which cells count as neighbors.
 #[derive(Clone)]
 pub enum NeighborRule {
     Moore,
@@ -37,7 +37,7 @@ impl Display for NeighborRule {
     }
 }
 
-/// Comfortable interfaces to create rules for survival and birth
+/// Comfortable interfaces to create rules for survival and birth.
 #[derive(Clone)]
 pub enum LifeRule<'a> {
     One(usize),
@@ -47,7 +47,7 @@ pub enum LifeRule<'a> {
 }
 
 impl<'a> LifeRule<'a> {
-    /// Returns the raw boolean array
+    /// Returns the raw boolean array.
     fn into_array(self) -> [bool; 9] {
         let mut return_array = [false; 9];
         match self {
@@ -68,11 +68,11 @@ impl<'a> LifeRule<'a> {
     }
 }
 
-/// Rule of a Game of Life
-/// - `survival`: With how many neighbors a living cell survives
-/// - `birth`: With how many neighbors a dead cell is born
-/// - `state`: After how many iterations a cell dies
-/// - `neighbor`: Neighbor counting algorithm
+/// Rule of a Game of Life.
+/// - `survival`: With how many neighbors a living cell survives.
+/// - `birth`: With how many neighbors a dead cell is born.
+/// - `state`: After how many iterations a cell dies.
+/// - `neighbor`: Neighbor counting algorithm.
 #[derive(Clone)]
 pub struct Rule {
     pub survival: [bool; 9],
@@ -103,41 +103,24 @@ impl Default for Rule {
     }
 }
 
-/// Trait to generalize possible Game of Life algorithms
-pub trait GameOfLife: IntoIterator {
+/// Trait to generalize possible Game of Life algorithms.
+pub trait GameOfLife {
     type Data;
 
-    /// Generate a new Game of Life from initial field
+    /// Generate a new Game of Life from an initial field.
     fn new(field: Array2<Self::Data>, rules: Rule) -> Self;
 
-    /// Compute the next generation
+    /// Compute the next generation.
     fn compute_next_generation(&mut self);
 
-    /// Returns the value at (x,y) and None if index out of bounds
+    /// Returns the value at (x,y) and None if index out of bounds.
     fn cell(&self, x: usize, y: usize) -> Option<u8>;
-    /// Returns the number of columns
+    /// Returns the number of columns.
     fn numx(&self) -> usize;
-    /// Returns the number of rows
+    /// Returns the number of rows.
     fn numy(&self) -> usize;
-    /// Returns the state
+    /// Returns the state.
     fn state(&self) -> u8;
-}
-
-/// Iterator over Game of Life field
-pub struct GameOfLifeIter<G: GameOfLife> {
-    x: usize,
-    y: usize,
-    gameoflife: G,
-}
-
-impl<G: GameOfLife> Iterator for GameOfLifeIter<G> {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.y += (self.x + 1) / self.gameoflife.numx();
-        self.x = (self.x + 1) % self.gameoflife.numx();
-        self.gameoflife.cell(self.x, self.y)
-    }
 }
 
 /// Computes the time steps using ordinary iterations.
@@ -149,7 +132,7 @@ pub struct GameOfLifeStd {
 }
 
 impl GameOfLifeStd {
-    /// Counts the living neighbors of the cell at (x, y)
+    /// Counts the living neighbors of the cell at (x, y).
     fn count_living_neighbors(&self, x: usize, y: usize) -> usize {
         match self.rules.neighbor {
             NeighborRule::Moore => {
@@ -188,20 +171,6 @@ impl GameOfLifeStd {
     }
 }
 
-impl IntoIterator for GameOfLifeStd {
-    type Item = u8;
-
-    type IntoIter = GameOfLifeIter<GameOfLifeStd>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        GameOfLifeIter {
-            x: 0,
-            y: 0,
-            gameoflife: self,
-        }
-    }
-}
-
 impl GameOfLife for GameOfLifeStd {
     type Data = RwLock<u8>;
 
@@ -217,7 +186,6 @@ impl GameOfLife for GameOfLifeStd {
         }
     }
 
-    /// Computes the new generation
     fn compute_next_generation(&mut self) {
         let mut temp = Array2::<RwLock<u8>>::default((self.numx, self.numy));
         Zip::indexed(&self.field)
@@ -263,20 +231,6 @@ pub struct GameOfLifeConvolution {
     rules: Rule,
     numx: usize,
     numy: usize,
-}
-
-impl IntoIterator for GameOfLifeConvolution {
-    type Item = u8;
-
-    type IntoIter = GameOfLifeIter<GameOfLifeConvolution>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        GameOfLifeIter {
-            x: 0,
-            y: 0,
-            gameoflife: self,
-        }
-    }
 }
 
 impl GameOfLife for GameOfLifeConvolution {

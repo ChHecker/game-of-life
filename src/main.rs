@@ -176,7 +176,7 @@ impl Arguments {
         match cli.command.as_ref().unwrap() {
             Commands::Gif { ref output } => {
                 presentation = Presentations::Gif;
-                output_file = Some(handle_path(output));
+                output_file = Some(handle_path(output).expect("path inquire"));
                 numx = cli.x.unwrap_or(10);
                 numy = cli.y.unwrap_or(10);
                 let pb_def = ProgressBar::new(iterations as u64);
@@ -184,7 +184,7 @@ impl Arguments {
                     ProgressStyle::with_template(
                         "{spinner:.green} [{elapsed}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
                     )
-                    .unwrap()
+                    .expect("progressbar")
                     .progress_chars("#>-"),
                 );
                 progressbar = Some(pb_def);
@@ -224,7 +224,7 @@ impl Arguments {
                     .with_validators(&[Box::new(file_validator), Box::new(required!())])
                     .with_formatter(&format_path)
                     .prompt()?;
-                Some(handle_path(&file_answer))
+                Some(handle_path(&file_answer).expect("path inquire"))
             }
             Presentations::Tui => None,
         };
@@ -322,7 +322,7 @@ impl Arguments {
                     ProgressStyle::with_template(
                         "{spinner:.green} [{elapsed}] [{wide_bar:.cyan/blue}] {pos}/{len} ({eta})",
                     )
-                    .unwrap()
+                    .expect("progressbar")
                     .progress_chars("#>-"),
                 );
                 Some(pb_def)
@@ -387,9 +387,9 @@ impl Arguments {
 ///
 /// If the file exists, the user is prompted whether to overwrite it. If not, the program terminate.
 /// If the file name has a different extension than ".gif", the program terminates with an error message. If the file name has no extension, ".gif" is appended.
-fn handle_path(output_file: &str) -> PathBuf {
-    let mut output_file = Path::new(&output_file).to_path_buf();
-    match output_file.extension() {
+fn handle_path<P: AsRef<Path>>(output_path: P) -> Result<PathBuf, InquireError> {
+    let mut output_path = output_path.as_ref().to_path_buf();
+    match output_path.extension() {
         Some(extension) => {
             if extension != "gif" {
                 eprintln!("The field must be saved as a \".gif\" file.\nAborting...");
@@ -397,34 +397,30 @@ fn handle_path(output_file: &str) -> PathBuf {
             };
         }
         None => {
-            output_file.set_extension("gif");
+            output_path.set_extension("gif");
         }
     }
-    if output_file.exists() {
+    if output_path.exists() {
         let ans = Confirm::new(
             format!(
                 "The file {} already exists. Overwrite?",
-                output_file.display()
+                output_path.display()
             )
             .as_str(),
         )
         .with_default(false)
-        .prompt();
+        .prompt()?;
 
-        match ans {
-            Ok(true) => (),
-            Ok(false) => {
-                eprintln!("Aborting...");
-                std::process::exit(exitcode::CANTCREAT);
-            }
-            Err(e) => panic!("{e}"),
+        if !ans {
+            eprintln!("Aborting...");
+            std::process::exit(exitcode::CANTCREAT);
         }
     }
 
-    output_file
+    Ok(output_path)
 }
 
-/// `inquire` alidator for filename input
+/// `inquire` validator for filename input
 fn file_validator(
     text: &str,
 ) -> Result<Validation, Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -508,7 +504,7 @@ fn main() {
             let field_vec_std = field_vec.iter().map(|elem| RwLock::new(*elem)).collect();
             let field = Array1::<RwLock<u8>>::from_vec(field_vec_std)
                 .into_shape((arguments.numx as usize, arguments.numy as usize))
-                .unwrap();
+                .expect("field reshape");
             let gol = GameOfLifeStd::new(field, arguments.rule);
             start(
                 arguments.presentation,
@@ -522,7 +518,7 @@ fn main() {
         Algorithm::Conv => {
             let field = Array1::<u8>::from_vec(field_vec)
                 .into_shape((arguments.numx as usize, arguments.numy as usize))
-                .unwrap();
+                .expect("field reshape");
             let gol = GameOfLifeConvolution::new(field, arguments.rule);
             start(
                 arguments.presentation,

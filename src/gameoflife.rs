@@ -159,9 +159,10 @@ impl GameOfLifeStd {
                 let top_border = if y > 1 { y - 1 } else { 0 };
                 self.field
                     .slice(s![left_border..right_border, top_border..bottom_border])
-                    .map(|x| (*x.read().unwrap() == self.rules.state) as usize)
+                    .map(|x| (*x.read().expect("poisoned RwLock") == self.rules.state) as usize)
                     .sum()
-                    - (*self.field[[x, y]].read().unwrap() == self.rules.state) as usize
+                    - (*self.field[[x, y]].read().expect("poisoned RwLock") == self.rules.state)
+                        as usize
             }
             NeighborRule::VonNeumann => {
                 let mut sum = 0;
@@ -224,12 +225,13 @@ impl GameOfLife for GameOfLifeStd {
             .par_for_each(|(x, y), elem_field, elem_temp| {
                 let count = self.count_living_neighbors(x, y);
                 if self.rules.birth[count]
-                    || (*elem_field.read().unwrap() == self.rules.state
+                    || (*elem_field.read().expect("poisoned RwLock") == self.rules.state
                         && self.rules.survival[count])
                 {
-                    *elem_temp.write().unwrap() = self.rules.state;
-                } else if *elem_field.read().unwrap() != 0 {
-                    *elem_temp.write().unwrap() = *elem_field.read().unwrap() - 1;
+                    *elem_temp.write().expect("poisoned RwLock") = self.rules.state;
+                } else if *elem_field.read().expect("poisoned RwLock") != 0 {
+                    *elem_temp.write().expect("poisoned RwLock") =
+                        *elem_field.read().expect("poisoned RwLock") - 1;
                 }
             });
         self.field = temp;
@@ -237,7 +239,7 @@ impl GameOfLife for GameOfLifeStd {
 
     fn cell(&self, x: usize, y: usize) -> Option<u8> {
         if let Some(cell) = self.field.get((x, y)) {
-            return Some(*cell.read().unwrap());
+            return Some(*cell.read().expect("poisoned RwLock"));
         }
         None
     }
@@ -319,10 +321,7 @@ impl GameOfLife for GameOfLifeConvolution {
     }
 
     fn cell(&self, x: usize, y: usize) -> Option<u8> {
-        if let Some(cell) = self.field.get((x, y)) {
-            return Some(*cell);
-        }
-        None
+        self.field.get((x, y)).copied()
     }
 
     fn numx(&self) -> usize {

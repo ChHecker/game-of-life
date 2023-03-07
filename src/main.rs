@@ -224,7 +224,7 @@ impl Arguments {
                     .with_validators(&[Box::new(file_validator), Box::new(required!())])
                     .with_formatter(&format_path)
                     .prompt()?;
-                Some(handle_path(&file_answer).expect("path inquire"))
+                Some(handle_path(file_answer).expect("path inquire"))
             }
             Presentations::Tui => None,
         };

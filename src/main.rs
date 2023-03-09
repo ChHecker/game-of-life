@@ -7,8 +7,8 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 use clap::{Parser, Subcommand};
-use gameoflife::gameoflife::*;
-use gameoflife::presentation::*;
+use game_of_life::gameoflife::*;
+use game_of_life::presentation::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use inquire::validator::Validation;
 use inquire::{required, Confirm, CustomType, InquireError, MultiSelect, Select, Text};

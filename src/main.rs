@@ -1,20 +1,17 @@
 use core::panic;
-use std::{
-    fmt::Display,
-    fs::File,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::RwLock,
-    time::Duration,
-};
+use std::fmt::Display;
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use std::sync::RwLock;
+use std::time::Duration;
 
 use clap::{Parser, Subcommand};
 use gameoflife::gameoflife::*;
 use gameoflife::presentation::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use inquire::{
-    required, validator::Validation, Confirm, CustomType, InquireError, MultiSelect, Select, Text,
-};
+use inquire::validator::Validation;
+use inquire::{required, Confirm, CustomType, InquireError, MultiSelect, Select, Text};
 use ndarray::{self, Array1};
 use rand::{self, Rng};
 

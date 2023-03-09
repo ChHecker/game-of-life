@@ -1,7 +1,10 @@
 //! # Game of Life
 //! Contains a collection of structures necessary for building a Game of Life.
 
-use std::{fmt::Display, ops::Range, str::FromStr, sync::RwLock};
+use std::fmt::Display;
+use std::ops::Range;
+use std::str::FromStr;
+use std::sync::RwLock;
 
 use ndarray::{self, arr2, s, Array2, Zip};
 use ndarray_ndimage::convolve;

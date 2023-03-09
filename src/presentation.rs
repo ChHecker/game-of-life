@@ -1,22 +1,22 @@
 //! # Frontends
 //! Contains possible ways to present/plot the Game of Life.
 
-use crate::gameoflife::*;
-use gif::{Encoder, EncodingError, Frame, Repeat};
-use indicatif::ProgressBar;
-use ndarray::Array3;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, Stdout, Write};
 use std::thread::sleep;
 use std::time::Duration;
-use termion::async_stdin;
-use termion::cursor;
+
+use gif::{Encoder, EncodingError, Frame, Repeat};
+use indicatif::ProgressBar;
+use ndarray::Array3;
 use termion::event::Key;
 use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::raw::RawTerminal;
+use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::{AlternateScreen, IntoAlternateScreen, ToMainScreen};
+use termion::{async_stdin, cursor};
+
+use crate::gameoflife::*;
 
 pub enum Presentations {
     Gif,
